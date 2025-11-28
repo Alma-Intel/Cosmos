@@ -203,7 +203,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Authentication settings
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/'  # Redirects to workspace (root)
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Custom authentication backend for single admin user

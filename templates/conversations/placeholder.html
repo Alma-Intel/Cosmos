@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - CRM{% endblock %}
+
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .construction-container {
+        text-align: center;
+        padding: 4rem 2rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .construction-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+    
+    .construction-title {
+        color: #667eea;
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .construction-subtitle {
+        color: #666;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .construction-message {
+        color: #999;
+        font-size: 1rem;
+        margin-top: 1rem;
+        line-height: 1.6;
+    }
+    
+    .construction-bar {
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        margin: 2rem 0;
+        border-radius: 2px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.6;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="construction-container">
+        <div class="construction-icon">🚧</div>
+        <h2 class="construction-title">{{ title }}</h2>
+        <div class="construction-bar"></div>
+        <p class="construction-subtitle">Under Construction</p>
+        <p class="construction-message">
+            This section is currently being developed.<br>
+            Please check back soon for updates.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
