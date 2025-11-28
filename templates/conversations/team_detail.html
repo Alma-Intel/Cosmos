@@ -187,7 +187,7 @@
         {% for manager in managers %}
         <div class="member-card">
             <div class="member-name">
-                <a href="{% url 'agent_detail' manager.user.id %}" style="color: #667eea; text-decoration: none;">
+                <a href="{% url 'agent_detail' manager.id %}" style="color: #667eea; text-decoration: none;">
                     {{ manager|display_name }}
                 </a>
             </div>
@@ -243,7 +243,7 @@
         {% for member in members %}
         <div class="member-card">
             <div class="member-name">
-                <a href="{% url 'agent_detail' member.user.id %}" style="color: #667eea; text-decoration: none;">
+                <a href="{% url 'agent_detail' member.id %}" style="color: #667eea; text-decoration: none;">
                     {{ member|display_name }}
                 </a>
             </div>

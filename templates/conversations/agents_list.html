@@ -70,7 +70,7 @@
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Team</th>
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Phone</th>
                 {% if can_view_alma_uuid %}
-                <th style="padding: 1rem; text-align: left; font-weight: 600;">ALMA UUID</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">ALMA Internal Organization</th>
                 {% endif %}
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
             </tr>
@@ -91,12 +91,12 @@
                 {% if can_view_alma_uuid %}
                 <td style="padding: 1rem;">
                     <code style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
-                        {{ profile.alma_internal_uuid|default:"—"|truncatechars:20 }}
+                        {{ profile.alma_internal_organization|default:"—" }}
                     </code>
                 </td>
                 {% endif %}
                 <td style="padding: 1rem;">
-                    <a href="{% url 'agent_detail' profile.user.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                    <a href="{% url 'agent_detail' profile.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                         View Details
                     </a>
                 </td>

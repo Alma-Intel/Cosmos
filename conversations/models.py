@@ -1,6 +1,7 @@
 """
 Models for the conversations app
 """
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -8,6 +9,7 @@ from django.core.exceptions import ValidationError
 
 class Team(models.Model):
     """Team model - each team must have a Manager or Director"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True, verbose_name='Team Name')
     description = models.TextField(blank=True, null=True, verbose_name='Description')
     alma_internal_organization = models.CharField(
@@ -24,6 +26,7 @@ class Team(models.Model):
         verbose_name = 'Team'
         verbose_name_plural = 'Teams'
         ordering = ['name']
+        default_auto_field = 'django.db.models.UUIDField'
     
     def __str__(self):
         return self.name
@@ -48,6 +51,7 @@ class UserProfile(models.Model):
         ('Admin', 'Admin'),
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(
         max_length=20,
@@ -86,6 +90,7 @@ class UserProfile(models.Model):
         verbose_name = 'User Profile'
         verbose_name_plural = 'User Profiles'
         ordering = ['user__last_name', 'user__first_name', 'user__username']
+        default_auto_field = 'django.db.models.UUIDField'
     
     def __str__(self):
         return f"{self.user.username}'s Profile"

@@ -58,7 +58,7 @@ def agent_create(request):
                     profile.full_clean()
                     profile.save()
                     messages.success(request, f'User {user.username} created successfully!')
-                    return redirect('agent_detail', user_id=user.id)
+                    return redirect('agent_detail', profile_id=profile.id)
                 except Exception as e:
                     # If validation fails, delete the user and show error
                     user.delete()
@@ -435,10 +435,10 @@ def analytics(request):
 
 
 @login_required
-def agent_detail(request, user_id):
+def agent_detail(request, profile_id):
     """View and edit agent details"""
-    target_user = get_object_or_404(User, pk=user_id)
-    target_profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    target_profile = get_object_or_404(UserProfile, pk=profile_id)
+    target_user = target_profile.user
     
     # Get current user's profile
     current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -508,7 +508,7 @@ def agent_detail(request, user_id):
                 # Save the profile
                 target_profile.save()
                 messages.success(request, f'Agent {target_profile.get_display_name()} updated successfully!')
-                return redirect('agent_detail', user_id=user_id)
+                return redirect('agent_detail', profile_id=profile_id)
             except ValidationError as e:
                 # Handle validation errors specifically
                 error_messages = []
