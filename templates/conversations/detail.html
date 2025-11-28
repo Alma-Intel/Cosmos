@@ -321,7 +321,13 @@
                     {% endif %}
                 </div>
                 <div class="message-timestamp">
-                    {{ message.messageTimestamp|date:"Y-m-d H:i:s" }}
+                    {% if message.messageTimestamp_parsed %}
+                        <span class="message-timestamp-value" data-utc-time="{{ message.messageTimestamp|date:'c' }}">{{ message.messageTimestamp_parsed|date:"Y-m-d H:i:s" }}</span>
+                    {% elif message.messageTimestamp %}
+                        <span class="message-timestamp-value" data-utc-time="{{ message.messageTimestamp|date:'c' }}">{{ message.messageTimestamp|date:"Y-m-d H:i:s" }}</span>
+                    {% else %}
+                        <span style="color: #999;">No timestamp</span>
+                    {% endif %}
                 </div>
             </div>
             <div class="message-content">

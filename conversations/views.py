@@ -257,6 +257,38 @@ def conversation_detail(request, conversation_id):
     messages = conversation.get('mensagens', [])
     messages.sort(key=lambda x: x.get('messageTimestamp', ''))
     
+    # Parse message timestamps to datetime objects for display
+    for message in messages:
+        if 'messageTimestamp' in message and message['messageTimestamp']:
+            try:
+                timestamp_str = message['messageTimestamp']
+                dt = None
+                if isinstance(timestamp_str, str):
+                    # Try parsing ISO format
+                    try:
+                        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        try:
+                            dt = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S.%f%z')
+                        except ValueError:
+                            try:
+                                dt = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S%z')
+                            except ValueError:
+                                dt = None
+                elif isinstance(timestamp_str, datetime):
+                    # Already a datetime object
+                    dt = timestamp_str
+                
+                if dt:
+                    # Ensure it's timezone-aware
+                    if dt.tzinfo is None:
+                        dt = timezone.make_aware(dt, timezone.utc)
+                    # Convert to user's timezone
+                    message['messageTimestamp_parsed'] = timezone.localtime(dt)
+            except Exception as e:
+                if settings.DEBUG:
+                    print(f"Error parsing message timestamp: {e}")
+    
     # Convert ObjectId to string for template (add 'id' field that templates can access)
     conversation['id'] = str(conversation['_id'])
     
