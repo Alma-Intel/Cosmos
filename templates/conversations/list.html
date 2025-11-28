@@ -54,9 +54,9 @@
 </div>
 
 <div class="content">
-    <h2 style="margin-bottom: 1.5rem; color: #333;">Conversations ({{ page_obj.paginator.count }} total)</h2>
+    <h2 style="margin-bottom: 1.5rem; color: #333;">Conversations ({{ all_conversations_count }} total)</h2>
     
-    {% if page_obj and page_obj.object_list %}
+    {% if conversations %}
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
@@ -70,7 +70,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for conv in page_obj %}
+            {% for conv in conversations %}
             <tr style="border-bottom: 1px solid #dee2e6;">
                 <td style="padding: 1rem;">
                     <code style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
@@ -105,20 +105,20 @@
         </tbody>
     </table>
     
-    {% if page_obj.has_other_pages %}
+    {% if total_pages > 1 %}
     <div class="pagination">
-        {% if page_obj.has_previous %}
+        {% if has_previous %}
             <a href="?page=1{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">&laquo; First</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Previous</a>
+            <a href="?page={{ previous_page }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Previous</a>
         {% endif %}
         
         <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            Page {{ current_page }} of {{ total_pages }}
         </span>
         
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Last &raquo;</a>
+        {% if has_next %}
+            <a href="?page={{ next_page }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Next</a>
+            <a href="?page={{ total_pages }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Last &raquo;</a>
         {% endif %}
     </div>
     {% endif %}
@@ -133,6 +133,8 @@
         Database: {{ debug_info.db_name }}<br>
         Collection: {{ debug_info.collection_name }}<br>
         Total matching documents: {{ debug_info.total_count }}<br>
+        Conversations list length: {{ debug_info.conversations_list_length }}<br>
+        Page object list length: {{ debug_info.page_obj_count }}<br>
         Query: <code>{{ debug_info.query }}</code>
     </div>
     {% endif %}

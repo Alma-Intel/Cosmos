@@ -79,13 +79,16 @@ def conversation_list(request):
     # First, check total count for debugging
     total_count = collection.count_documents(query)
     
-    conversations = list(collection.find(query).sort('lastUpdate', -1))
+    # Get conversations from MongoDB
+    conversations_cursor = collection.find(query).sort('lastUpdate', -1)
+    conversations = list(conversations_cursor)
     
     # Convert ObjectId to string for each conversation (for template access)
     for conv in conversations:
         conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
     
     # Get filter options (with error handling)
+    from django.conf import settings
     try:
         all_sellers = get_all_sellers()
     except Exception as e:
@@ -107,10 +110,15 @@ def conversation_list(request):
         if settings.DEBUG:
             print(f"Error getting sales stages: {e}")
     
-    # Pagination
-    paginator = Paginator(conversations, 20)  # Show 20 conversations per page
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    # Pagination - use a simple approach
+    page_number = int(request.GET.get('page', 1))
+    per_page = 20
+    total_pages = (len(conversations) + per_page - 1) // per_page if conversations else 0
+    
+    # Calculate pagination slice
+    start_idx = (page_number - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_conversations = conversations[start_idx:end_idx]
     
     # Debug info (only in DEBUG mode)
     debug_info = None
@@ -118,12 +126,24 @@ def conversation_list(request):
         debug_info = {
             'query': str(query),
             'total_count': total_count,
+            'conversations_list_length': len(conversations),
+            'paginated_length': len(paginated_conversations),
+            'page_number': page_number,
+            'start_idx': start_idx,
+            'end_idx': end_idx,
             'collection_name': settings.MONGODB_COLLECTION_NAME,
             'db_name': settings.MONGODB_DB_NAME,
         }
     
     context = {
-        'conversations': page_obj,
+        'conversations': paginated_conversations,
+        'all_conversations_count': len(conversations),
+        'total_pages': total_pages,
+        'current_page': page_number,
+        'has_previous': page_number > 1,
+        'has_next': page_number < total_pages,
+        'previous_page': page_number - 1 if page_number > 1 else None,
+        'next_page': page_number + 1 if page_number < total_pages else None,
         'all_sellers': all_sellers,
         'all_tags': all_tags,
         'all_sales_stages': all_sales_stages,
