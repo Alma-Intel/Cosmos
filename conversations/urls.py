@@ -15,6 +15,7 @@ urlpatterns = [
     
     # Other sections
     path('agentes/', views_other.agentes_list, name='agentes_list'),
+    path('agentes/<int:user_id>/', views_other.agent_detail, name='agent_detail'),
     path('clientes/', views_other.clientes_list, name='clientes_list'),
     path('bots/', views_other.bots_list, name='bots_list'),
     path('analytics/', views_other.analytics, name='analytics'),

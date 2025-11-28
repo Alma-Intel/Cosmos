@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}ALMA COSMOS - Agents{% endblock %}
+
+{% block header_title %}ALMA COSMOS - Agents{% endblock %}
+
+{% block content %}
+<div class="filter-section">
+    <form method="get" class="filter-form">
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select name="role" id="role">
+                <option value="">All Roles</option>
+                {% for role in all_roles %}
+                <option value="{{ role }}" {% if role == current_role_filter %}selected{% endif %}>
+                    {{ role }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="team">Team</label>
+            <select name="team" id="team">
+                <option value="">All Teams</option>
+                {% for team in all_teams %}
+                <option value="{{ team.id }}" {% if team.id|stringformat:"s" == current_team_filter %}selected{% endif %}>
+                    {{ team.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="search">Search</label>
+            <input type="text" name="search" id="search" placeholder="Name, Email, or Username" value="{{ current_search }}">
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'agentes_list' %}" class="btn btn-secondary" style="margin-top: 0.5rem; display: block; text-align: center; text-decoration: none;">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="content">
+    <h2 style="margin-bottom: 1.5rem; color: #333;">Agents ({{ profiles|length }} total)</h2>
+    
+    {% if profiles %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Name</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Username</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Email</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Role</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Team</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Phone</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for profile in profiles %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 1rem;">{{ profile|display_name }}</td>
+                <td style="padding: 1rem;">{{ profile.user.username }}</td>
+                <td style="padding: 1rem;">{{ profile.user.email|default:"—" }}</td>
+                <td style="padding: 1rem;">
+                    <span style="background: {% if profile.role == 'Admin' %}#dc3545{% elif profile.role == 'Director' %}#fd7e14{% elif profile.role == 'Manager' %}#0d6efd{% else %}#6c757d{% endif %}; color: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
+                        {{ profile.role }}
+                    </span>
+                </td>
+                <td style="padding: 1rem;">{{ profile.team.name|default:"—" }}</td>
+                <td style="padding: 1rem;">{{ profile.cell_phone|default:"—" }}</td>
+                <td style="padding: 1rem;">
+                    <a href="{% url 'agent_detail' profile.user.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                        View Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% else %}
+    <p style="padding: 2rem; text-align: center; color: #666;">No agents found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
