@@ -254,6 +254,9 @@
                 <li class="nav-tab {% if request.resolver_match.url_name == 'agentes_list' %}active{% endif %}">
                     <a href="{% url 'agentes_list' %}">Agentes</a>
                 </li>
+                <li class="nav-tab {% if request.resolver_match.url_name == 'teams_list' or request.resolver_match.url_name == 'team_detail' %}active{% endif %}">
+                    <a href="{% url 'teams_list' %}">Teams</a>
+                </li>
                 <li class="nav-tab {% if request.resolver_match.url_name == 'clientes_list' %}active{% endif %}">
                     <a href="{% url 'clientes_list' %}">Clientes</a>
                 </li>

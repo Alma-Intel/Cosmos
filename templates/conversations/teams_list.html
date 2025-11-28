@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}ALMA COSMOS - Teams{% endblock %}
+
+{% block header_title %}ALMA COSMOS - Teams{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0; color: #333;">Teams ({{ teams_data|length }} total)</h2>
+        {% if current_profile.role == 'Admin' or current_profile.role == 'Director' %}
+        <a href="{% url 'team_create' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+            + Create Team
+        </a>
+        {% endif %}
+    </div>
+    
+    {% if teams_data %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Team Name</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Description</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Manager(s)</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Members</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team_info in teams_data %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 1rem; font-weight: 500;">{{ team_info.team.name }}</td>
+                <td style="padding: 1rem;">{{ team_info.team.description|default:"—"|truncatewords:10 }}</td>
+                <td style="padding: 1rem;">
+                    {% if team_info.managers %}
+                        {% for manager in team_info.managers %}
+                            <span style="background: #e7f3ff; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem; display: inline-block; margin-bottom: 0.25rem;">
+                                {{ manager|display_name }} ({{ manager.role }})
+                            </span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color: #dc3545; font-style: italic;">No Manager</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">
+                    <span style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
+                        {{ team_info.member_count }} member{{ team_info.member_count|pluralize }}
+                    </span>
+                </td>
+                <td style="padding: 1rem;">
+                    <a href="{% url 'team_detail' team_info.team.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                        View Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% else %}
+    <p style="padding: 2rem; text-align: center; color: #666;">No teams found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

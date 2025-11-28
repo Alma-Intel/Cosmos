@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}ALMA COSMOS - {{ title }}{% endblock %}
+
+{% block header_title %}
+    <a href="{% url 'teams_list' %}" style="color: white; text-decoration: none; margin-right: 1rem;">← Back</a>
+    ALMA COSMOS - Teams
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 0.95rem;
+    }
+    
+    .members-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .member-card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        border-left: 3px solid #667eea;
+    }
+    
+    .member-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .member-details {
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    
+    .role-admin {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .role-director {
+        background: #fd7e14;
+        color: white;
+    }
+    
+    .role-manager {
+        background: #0d6efd;
+        color: white;
+    }
+    
+    .role-user {
+        background: #6c757d;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-section">
+    <h2>Team Information</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Team Name</div>
+            <div class="info-value">{{ team.name }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Description</div>
+            <div class="info-value">{{ team.description|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Total Members</div>
+            <div class="info-value">{{ members|length }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Managers</div>
+            <div class="info-value">{{ managers|length }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Created At</div>
+            <div class="info-value">{{ team.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Last Updated</div>
+            <div class="info-value">{{ team.updated_at|date:"Y-m-d H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-section">
+    <h2>Manager(s)</h2>
+    {% if managers %}
+    <div class="members-list">
+        {% for manager in managers %}
+        <div class="member-card">
+            <div class="member-name">
+                <a href="{% url 'agent_detail' manager.user.id %}" style="color: #667eea; text-decoration: none;">
+                    {{ manager|display_name }}
+                </a>
+            </div>
+            <div class="member-details">
+                <div><strong>Username:</strong> {{ manager.user.username }}</div>
+                <div><strong>Email:</strong> {{ manager.user.email|default:"—" }}</div>
+                <div><strong>Role:</strong> 
+                    <span class="role-badge role-{{ manager.role|lower }}">{{ manager.role }}</span>
+                </div>
+                {% if manager.cell_phone %}
+                <div><strong>Phone:</strong> {{ manager.cell_phone }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: #dc3545; font-style: italic; padding: 1rem;">⚠️ No Manager assigned to this team. Please assign a Manager, Director, or Admin.</p>
+    {% endif %}
+</div>
+
+<div class="detail-section">
+    <h2>Team Members ({{ members|length }})</h2>
+    {% if members %}
+    <div class="members-list">
+        {% for member in members %}
+        <div class="member-card">
+            <div class="member-name">
+                <a href="{% url 'agent_detail' member.user.id %}" style="color: #667eea; text-decoration: none;">
+                    {{ member|display_name }}
+                </a>
+            </div>
+            <div class="member-details">
+                <div><strong>Username:</strong> {{ member.user.username }}</div>
+                <div><strong>Email:</strong> {{ member.user.email|default:"—" }}</div>
+                <div><strong>Role:</strong> 
+                    <span class="role-badge role-{{ member.role|lower }}">{{ member.role }}</span>
+                </div>
+                {% if member.cell_phone %}
+                <div><strong>Phone:</strong> {{ member.cell_phone }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="padding: 1rem; color: #666; font-style: italic;">No members in this team.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

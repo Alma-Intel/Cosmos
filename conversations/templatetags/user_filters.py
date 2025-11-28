@@ -30,3 +30,21 @@ def display_name(user_or_profile):
     
     return user.username
 
+
+@register.filter
+def display_manager(profile):
+    """
+    Returns the manager's display name for a UserProfile in a team dropdown
+    """
+    if not profile:
+        return ""
+    
+    user = profile.user if hasattr(profile, 'user') else profile
+    
+    if user.first_name or user.last_name:
+        name_parts = [part for part in [user.first_name, user.last_name] if part]
+        name = " ".join(name_parts).strip()
+        return f"{name} ({profile.role})"
+    
+    return f"{user.username} ({profile.role})"
+

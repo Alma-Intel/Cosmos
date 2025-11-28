@@ -233,7 +233,17 @@ class UserCreateForm(forms.Form):
 
 
 class TeamCreateForm(forms.ModelForm):
-    """Form for creating new teams"""
+    """Form for creating new teams - requires a manager to be assigned"""
+    manager = forms.ModelChoiceField(
+        queryset=UserProfile.objects.filter(role__in=['Manager', 'Director', 'Admin']),
+        required=True,
+        label='Manager',
+        help_text='Select a Manager, Director, or Admin to assign to this team',
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
+    
     class Meta:
         model = Team
         fields = ['name', 'description']
@@ -257,6 +267,10 @@ class TeamCreateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['name'].required = True
         self.fields['description'].required = False
+        # Order managers by display name
+        self.fields['manager'].queryset = UserProfile.objects.filter(
+            role__in=['Manager', 'Director', 'Admin']
+        ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
 
 
 class ProfileForm(forms.Form):

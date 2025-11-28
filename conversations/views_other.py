@@ -82,7 +82,11 @@ def team_create(request):
         if form.is_valid():
             try:
                 team = form.save()
-                messages.success(request, f'Team "{team.name}" created successfully!')
+                # Assign the selected manager to the team
+                manager_profile = form.cleaned_data['manager']
+                manager_profile.team = team
+                manager_profile.save()
+                messages.success(request, f'Team "{team.name}" created successfully with manager {manager_profile.get_display_name()}!')
                 return redirect('agentes_list')
             except Exception as e:
                 messages.error(request, f'Error creating team: {str(e)}')
@@ -145,6 +149,62 @@ def agentes_list(request):
         'can_view_alma_uuid': can_view_alma_uuid(request.user),
     }
     return render(request, 'conversations/agents_list.html', context)
+
+
+@login_required
+def teams_list(request):
+    """List all teams"""
+    # Get all teams
+    teams = Team.objects.all().prefetch_related('members__user').order_by('name')
+    
+    # Get current user's profile for permission checks
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # For each team, get the manager(s) and members
+    teams_data = []
+    for team in teams:
+        # Get managers/directors in this team
+        managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user')
+        # Get all members
+        members = team.members.all().select_related('user')
+        
+        teams_data.append({
+            'team': team,
+            'managers': managers,
+            'members': members,
+            'member_count': members.count(),
+        })
+    
+    context = {
+        'title': 'Teams',
+        'teams_data': teams_data,
+        'current_profile': current_profile,
+    }
+    return render(request, 'conversations/teams_list.html', context)
+
+
+@login_required
+def team_detail(request, team_id):
+    """View team details with manager and members"""
+    team = get_object_or_404(Team, pk=team_id)
+    
+    # Get managers/directors in this team
+    managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
+    
+    # Get all members
+    members = team.members.all().select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+    
+    # Get current user's profile for permission checks
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    context = {
+        'title': f'Team: {team.name}',
+        'team': team,
+        'managers': managers,
+        'members': members,
+        'current_profile': current_profile,
+    }
+    return render(request, 'conversations/team_detail.html', context)
 
 
 @login_required
@@ -228,11 +288,12 @@ def agent_detail(request, user_id):
                         target_profile.role = new_role
             
             # Team update - managers, directors, and admins can change teams
+            # Always update team if user has permission
             if (current_profile.is_manager() or current_profile.is_director() or current_profile.is_admin()):
-                # Always update team if it's in the form
-                if 'team' in form.cleaned_data:
-                    team_value = form.cleaned_data.get('team')
-                    target_profile.team = team_value if team_value else None
+                # Get team value from form (will be None if "No Team" is selected)
+                team_value = form.cleaned_data.get('team')
+                # Explicitly set team (even if None to clear it)
+                target_profile.team = team_value
             
             # ALMA UUID can only be set by admins
             if can_view_alma and 'alma_internal_uuid' in form.cleaned_data:
