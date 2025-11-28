@@ -30,19 +30,23 @@ class SingleAdminBackend(BaseBackend):
         
         if password_hash == admin_password_hash:
             # Get or create the admin user
-            user, created = User.objects.get_or_create(
-                username='admin',
-                defaults={
-                    'is_staff': True,
-                    'is_superuser': True,
-                    'is_active': True,
-                }
-            )
-            if created:
-                # Set a random password in the database (won't be used, but good practice)
-                user.set_unusable_password()
-                user.save()
-            return user
+            try:
+                user, created = User.objects.get_or_create(
+                    username='admin',
+                    defaults={
+                        'is_staff': True,
+                        'is_superuser': True,
+                        'is_active': True,
+                    }
+                )
+                if created:
+                    # Set a random password in the database (won't be used, but good practice)
+                    user.set_unusable_password()
+                    user.save()
+                return user
+            except Exception:
+                # Database tables might not exist yet - migrations need to run first
+                return None
         
         return None
     
