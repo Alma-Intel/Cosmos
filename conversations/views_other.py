@@ -240,6 +240,25 @@ def team_detail(request, team_id):
                     return redirect('team_detail', team_id=team_id)
                 except UserProfile.DoesNotExist:
                     messages.error(request, 'Manager not found')
+        elif 'remove_member' in request.POST:
+            member_id = request.POST.get('remove_member')
+            if member_id:
+                try:
+                    member_to_remove = UserProfile.objects.get(pk=member_id, team=team)
+                    # Check if removing this member would leave the team without a manager
+                    is_manager = member_to_remove.role in ['Manager', 'Director', 'Admin']
+                    if is_manager:
+                        # Check if there are other managers
+                        other_managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).exclude(pk=member_id)
+                        if not other_managers.exists():
+                            messages.warning(request, f'Warning: {member_to_remove.get_display_name()} is the last manager. Removing them will leave the team without a manager.')
+                    # Remove the member from the team
+                    member_to_remove.team = None
+                    member_to_remove.save()
+                    messages.success(request, f'Member {member_to_remove.get_display_name()} removed from team')
+                    return redirect('team_detail', team_id=team_id)
+                except UserProfile.DoesNotExist:
+                    messages.error(request, 'Member not found')
         elif 'delete_team' in request.POST:
             # Delete team - move all members to no team
             team_name = team.name

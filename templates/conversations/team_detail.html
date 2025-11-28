@@ -232,6 +232,27 @@
                 {% if member.cell_phone %}
                 <div><strong>Phone:</strong> {{ member.cell_phone }}</div>
                 {% endif %}
+                {% if can_edit_team %}
+                <form method="post" style="margin-top: 0.5rem; display: inline-block;">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_member" value="{{ member.id }}">
+                    {% if member.role == "Manager" or member.role == "Director" or member.role == "Admin" %}
+                        {% if managers|length == 1 %}
+                            <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove {{ member|display_name }} from this team? Warning: This is the last manager. The team will have no manager after removal.');">
+                                Remove from Team
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove {{ member|display_name }} from this team?');">
+                                Remove from Team
+                            </button>
+                        {% endif %}
+                    {% else %}
+                        <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove {{ member|display_name }} from this team?');">
+                            Remove from Team
+                        </button>
+                    {% endif %}
+                </form>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
