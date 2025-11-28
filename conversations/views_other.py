@@ -197,14 +197,10 @@ def team_detail(request, team_id):
     # Get managers/directors in this team
     managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
     
-    # Get all members
-    members = team.members.all().select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
-    
-    # Get managers/directors in this team (before POST handling)
-    managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
-    
-    # Get all members (before POST handling)
-    members = team.members.all().select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+    # Get all members excluding the managers (those shown in the Managers section)
+    # Exclude by getting manager IDs and excluding them from members
+    manager_ids = managers.values_list('id', flat=True)
+    members = team.members.exclude(id__in=manager_ids).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
     # Handle POST requests for team management
     if request.method == 'POST' and can_edit_team:
