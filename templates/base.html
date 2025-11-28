@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CRM - Conversation Management{% endblock %}</title>
+    <title>{% block title %}ALMA COSMOS - {% endblock %}</title>
     <style>
         * {
             margin: 0;
@@ -230,7 +230,7 @@
 <body>
     <div class="header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>{% block header_title %}CRM - Conversation Management{% endblock %}</h1>
+            <h1>{% block header_title %}ALMA COSMOS{% endblock %}</h1>
             {% if user.is_authenticated %}
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <span style="font-size: 0.9rem;">Logged in as <strong>{{ user.username }}</strong></span>
