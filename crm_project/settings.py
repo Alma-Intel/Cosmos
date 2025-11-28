@@ -104,7 +104,12 @@ else:
     }
 
 # MongoDB Configuration
-MONGODB_URL = config('MONGODB_URL', default='mongodb://localhost:27017/')
+# Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
+# Check for MONGO_URL first, then fall back to MONGODB_URL
+if os.environ.get('MONGO_URL'):
+    MONGODB_URL = config('MONGO_URL')
+else:
+    MONGODB_URL = config('MONGODB_URL', default='mongodb://localhost:27017/')
 MONGODB_DB_NAME = config('MONGODB_DB_NAME', default='crm_db')
 MONGODB_COLLECTION_NAME = config('MONGODB_COLLECTION_NAME', default='conversations')
 

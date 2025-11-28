@@ -16,7 +16,17 @@ from .mongodb import (
 @login_required
 def conversation_list(request):
     """List all conversations with filtering options"""
-    collection = get_conversations_collection()
+    try:
+        collection = get_conversations_collection()
+    except Exception as e:
+        from django.http import HttpResponse
+        return HttpResponse(
+            f"<h1>MongoDB Connection Error</h1>"
+            f"<p>Unable to connect to MongoDB. Please check your MONGODB_URL environment variable.</p>"
+            f"<p>Error: {str(e)}</p>"
+            f"<p>Make sure MONGODB_URL, MONGODB_DB_NAME, and MONGODB_COLLECTION_NAME are set in Railway.</p>",
+            status=500
+        )
     
     # Get filter parameters from request
     seller_id = request.GET.get('seller_id', '')
@@ -94,7 +104,17 @@ def conversation_list(request):
 @login_required
 def conversation_detail(request, conversation_id):
     """View detailed information about a specific conversation"""
-    collection = get_conversations_collection()
+    try:
+        collection = get_conversations_collection()
+    except Exception as e:
+        from django.http import HttpResponse
+        return HttpResponse(
+            f"<h1>MongoDB Connection Error</h1>"
+            f"<p>Unable to connect to MongoDB. Please check your MONGODB_URL environment variable.</p>"
+            f"<p>Error: {str(e)}</p>"
+            f"<p>Make sure MONGODB_URL, MONGODB_DB_NAME, and MONGODB_COLLECTION_NAME are set in Railway.</p>",
+            status=500
+        )
     
     # Get conversation by _id (ObjectId) or chatId
     from bson import ObjectId

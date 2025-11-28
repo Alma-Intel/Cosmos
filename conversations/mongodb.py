@@ -2,12 +2,40 @@
 MongoDB connection and utility functions
 """
 from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
 from django.conf import settings
 
 
 def get_mongodb_client():
     """Get MongoDB client connection"""
-    return MongoClient(settings.MONGODB_URL)
+    mongodb_url = settings.MONGODB_URL
+    
+    # Check if MongoDB URL is configured (not using default localhost)
+    if mongodb_url == 'mongodb://localhost:27017/':
+        raise ConfigurationError(
+            "MongoDB URL not configured. Please set MONGO_URL (or MONGODB_URL) environment variable in Railway."
+        )
+    
+    try:
+        # Connect with timeout settings
+        client = MongoClient(
+            mongodb_url,
+            serverSelectionTimeoutMS=5000,  # 5 second timeout
+            connectTimeoutMS=5000
+        )
+        # Test the connection
+        client.admin.command('ping')
+        return client
+    except ServerSelectionTimeoutError as e:
+        raise ConnectionError(
+            f"Could not connect to MongoDB at {mongodb_url}. "
+            f"Please check your MONGO_URL environment variable. Error: {str(e)}"
+        )
+    except Exception as e:
+        raise ConnectionError(
+            f"MongoDB connection error: {str(e)}. "
+            f"Please verify MONGO_URL (or MONGODB_URL), MONGODB_DB_NAME, and MONGODB_COLLECTION_NAME are set correctly."
+        )
 
 
 def get_conversations_collection():
