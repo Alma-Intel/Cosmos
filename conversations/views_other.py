@@ -475,6 +475,13 @@ def profile(request):
             request.user.first_name = form.cleaned_data.get('first_name', '')
             request.user.last_name = form.cleaned_data.get('last_name', '')
             request.user.email = form.cleaned_data.get('email', '')
+            
+            # Update password if provided
+            new_password = form.cleaned_data.get('new_password')
+            if new_password:
+                request.user.set_password(new_password)
+                messages.success(request, 'Password changed successfully!')
+            
             request.user.save()
             
             # Update profile fields

@@ -386,6 +386,41 @@ class ProfileForm(forms.Form):
             'placeholder': 'Enter cell phone number'
         })
     )
+    new_password = forms.CharField(
+        max_length=128,
+        required=False,
+        label='New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Leave blank to keep current password'
+        }),
+        help_text='Leave blank to keep your current password.'
+    )
+    confirm_password = forms.CharField(
+        max_length=128,
+        required=False,
+        label='Confirm New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirm new password'
+        }),
+        help_text='Re-enter the new password to confirm.'
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+        
+        if new_password or confirm_password:
+            if not new_password:
+                raise forms.ValidationError('Please enter a new password.')
+            if not confirm_password:
+                raise forms.ValidationError('Please confirm your new password.')
+            if new_password != confirm_password:
+                raise forms.ValidationError('Passwords do not match.')
+        
+        return cleaned_data
     
     def __init__(self, *args, **kwargs):
         profile_instance = kwargs.pop('profile_instance', None)
