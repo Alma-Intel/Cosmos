@@ -302,25 +302,6 @@ class TeamCreateForm(forms.ModelForm):
         })
     )
     
-    def __init__(self, *args, **kwargs):
-        current_profile = kwargs.pop('current_profile', None)
-        super().__init__(*args, **kwargs)
-        
-        # Filter managers by organization (admins can see all)
-        if current_profile:
-            if current_profile.is_admin():
-                self.fields['manager'].queryset = UserProfile.objects.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
-            else:
-                if current_profile.alma_internal_organization:
-                    self.fields['manager'].queryset = UserProfile.objects.filter(
-                        role__in=['Manager', 'Director', 'Admin'],
-                        alma_internal_organization=current_profile.alma_internal_organization
-                    ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
-                else:
-                    self.fields['manager'].queryset = UserProfile.objects.none()
-        else:
-            self.fields['manager'].queryset = UserProfile.objects.none()
-    
     class Meta:
         model = Team
         fields = ['name', 'description']
@@ -341,13 +322,28 @@ class TeamCreateForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # Pop current_profile before calling super() since ModelForm doesn't accept it
+        current_profile = kwargs.pop('current_profile', None)
         super().__init__(*args, **kwargs)
+        
+        # Set required fields
         self.fields['name'].required = True
         self.fields['description'].required = False
-        # Order managers by display name
-        self.fields['manager'].queryset = UserProfile.objects.filter(
-            role__in=['Manager', 'Director', 'Admin']
-        ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+        
+        # Filter managers by organization (admins can see all)
+        if current_profile:
+            if current_profile.is_admin():
+                self.fields['manager'].queryset = UserProfile.objects.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+            else:
+                if current_profile.alma_internal_organization:
+                    self.fields['manager'].queryset = UserProfile.objects.filter(
+                        role__in=['Manager', 'Director', 'Admin'],
+                        alma_internal_organization=current_profile.alma_internal_organization
+                    ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+                else:
+                    self.fields['manager'].queryset = UserProfile.objects.none()
+        else:
+            self.fields['manager'].queryset = UserProfile.objects.none()
 
 
 class ProfileForm(forms.Form):
