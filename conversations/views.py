@@ -10,7 +10,9 @@ from .mongodb import (
     get_conversations_collection,
     get_all_sellers,
     get_all_tags,
-    get_all_sales_stages
+    get_all_sales_stages,
+    get_uuid_to_email_mapping,
+    map_seller_to_email
 )
 
 
@@ -83,14 +85,35 @@ def conversation_list(request):
     conversations_cursor = collection.find(query).sort('lastUpdate', -1)
     conversations = list(conversations_cursor)
     
+    # Get UUID to email mapping (once, use for all operations)
+    uuid_to_email_map = get_uuid_to_email_mapping()
+    
     # Convert ObjectId to string for each conversation (for template access)
+    # Also map seller UUIDs to emails
     for conv in conversations:
         conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
+        
+        # Map seller UUIDs to emails
+        if 'envolvedSellers' in conv and conv['envolvedSellers']:
+            conv['envolvedSellersDisplay'] = [
+                map_seller_to_email(seller, uuid_to_email_map) 
+                for seller in conv['envolvedSellers']
+            ]
+        else:
+            conv['envolvedSellersDisplay'] = []
     
     # Get filter options (with error handling)
     from django.conf import settings
     try:
-        all_sellers = get_all_sellers()
+        all_sellers_raw = get_all_sellers()
+        # Map sellers to display names (email if available, otherwise UUID)
+        all_sellers = [
+            {
+                'uuid': seller,
+                'display': map_seller_to_email(seller, uuid_to_email_map)
+            }
+            for seller in all_sellers_raw
+        ]
     except Exception as e:
         all_sellers = []
         if settings.DEBUG:
@@ -195,6 +218,14 @@ def conversation_detail(request, conversation_id):
     # Convert ObjectId to string for template (add 'id' field that templates can access)
     conversation['id'] = str(conversation['_id'])
     
+    # Get UUID to email mapping and map seller UUIDs to emails
+    uuid_to_email_map = get_uuid_to_email_mapping()
+    envolved_sellers = conversation.get('envolvedSellers', [])
+    envolved_sellers_display = [
+        map_seller_to_email(seller, uuid_to_email_map) 
+        for seller in envolved_sellers
+    ]
+    
     # Normalize tags - convert string to list if needed
     metadata = conversation.get('metadata', {})
     tags = metadata.get('clientTagsInput')
@@ -208,7 +239,7 @@ def conversation_detail(request, conversation_id):
         'conversation': conversation,
         'messages': messages,
         'metadata': metadata,
-        'envolved_sellers': conversation.get('envolvedSellers', []),
+        'envolved_sellers': envolved_sellers_display,
     }
     
     return render(request, 'conversations/detail.html', context)

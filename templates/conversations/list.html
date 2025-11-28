@@ -10,8 +10,8 @@
             <select name="seller_id" id="seller_id">
                 <option value="">All Sellers</option>
                 {% for seller in all_sellers %}
-                <option value="{{ seller }}" {% if seller == current_seller_id %}selected{% endif %}>
-                    {{ seller }}
+                <option value="{{ seller.uuid }}" {% if seller.uuid == current_seller_id %}selected{% endif %}>
+                    {{ seller.display }}
                 </option>
                 {% endfor %}
             </select>
@@ -81,14 +81,14 @@
                 <td style="padding: 1rem;">{{ conv.metadata.clientEmail|default:"—" }}</td>
                 <td style="padding: 1rem;">{{ conv.mensagens|length }}</td>
                 <td style="padding: 1rem;">
-                    {% if conv.envolvedSellers %}
-                        {% for seller in conv.envolvedSellers|slice:":2" %}
+                    {% if conv.envolvedSellersDisplay %}
+                        {% for seller in conv.envolvedSellersDisplay|slice:":2" %}
                             <span style="background: #e7f3ff; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">
-                                {{ seller|truncatechars:15 }}
+                                {{ seller|truncatechars:30 }}
                             </span>
                         {% endfor %}
-                        {% if conv.envolvedSellers|length > 2 %}
-                            <span style="color: #666; font-size: 0.85rem;">+{{ conv.envolvedSellers|length|add:"-2" }}</span>
+                        {% if conv.envolvedSellersDisplay|length > 2 %}
+                            <span style="color: #666; font-size: 0.85rem;">+{{ conv.envolvedSellersDisplay|length|add:"-2" }}</span>
                         {% endif %}
                     {% else %}
                         —

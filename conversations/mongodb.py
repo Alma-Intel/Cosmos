@@ -87,3 +87,29 @@ def get_all_sales_stages():
     # Filter out None values and convert to strings
     return sorted([str(s) for s in stages if s])
 
+
+def get_uuid_to_email_mapping():
+    """Get the uuidToEmail mapping from dicts database"""
+    try:
+        client = get_mongodb_client()
+        db = client['dicts']
+        collection = db['dicts']
+        
+        # Find document with name "uuidToEmail"
+        doc = collection.find_one({'name': 'uuidToEmail'})
+        
+        if doc and 'dict' in doc:
+            # Return the dict mapping UUIDs to emails
+            return doc['dict']
+        return {}
+    except Exception as e:
+        # If there's an error, return empty dict
+        if settings.DEBUG:
+            print(f"Error getting uuidToEmail mapping: {e}")
+        return {}
+
+
+def map_seller_to_email(seller_uuid, uuid_to_email_map):
+    """Map a seller UUID to email, or return UUID if no mapping exists"""
+    return uuid_to_email_map.get(seller_uuid, seller_uuid)
+
