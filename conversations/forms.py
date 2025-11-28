@@ -232,6 +232,33 @@ class UserCreateForm(forms.Form):
         return email
 
 
+class TeamCreateForm(forms.ModelForm):
+    """Form for creating new teams"""
+    class Meta:
+        model = Team
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter team name'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter team description (optional)',
+                'rows': 3
+            })
+        }
+        labels = {
+            'name': 'Team Name',
+            'description': 'Description'
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['description'].required = False
+
+
 class ProfileForm(forms.Form):
     """Form for editing user profile"""
     first_name = forms.CharField(

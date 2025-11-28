@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}ALMA COSMOS - Create New Team{% endblock %}
+
+{% block header_title %}
+    <a href="{% url 'agentes_list' %}" style="color: white; text-decoration: none; margin-right: 1rem;">← Back</a>
+    ALMA COSMOS - Create New Team
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95rem;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-group .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+    
+    .form-group .errorlist {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        list-style: none;
+        padding: 0;
+    }
+    
+    .form-group .errorlist li {
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-section">
+    <h2>Create New Team</h2>
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.help_text %}
+            <div class="help-text">{{ form.name.help_text }}</div>
+            {% endif %}
+            {% if form.name.errors %}
+            <ul class="errorlist">
+                {% for error in form.name.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.help_text %}
+            <div class="help-text">{{ form.description.help_text }}</div>
+            {% endif %}
+            {% if form.description.errors %}
+            <ul class="errorlist">
+                {% for error in form.description.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Team</button>
+        <a href="{% url 'agentes_list' %}" class="btn btn-secondary" style="text-decoration: none; display: inline-block; margin-left: 0.5rem;">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+

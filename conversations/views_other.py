@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User
 from .models import UserProfile, Team
-from .forms import ProfileForm, AgentEditForm, UserCreateForm
+from .forms import ProfileForm, AgentEditForm, UserCreateForm, TeamCreateForm
 from .permissions import get_user_team_members, can_view_alma_uuid
 
 
@@ -65,6 +65,36 @@ def agent_create(request):
         'current_profile': current_profile,
     }
     return render(request, 'conversations/agent_create.html', context)
+
+
+@login_required
+def team_create(request):
+    """Create a new team"""
+    # Get current user's profile
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Check permissions - only admins and directors can create teams
+    if not (current_profile.is_admin() or current_profile.is_director()):
+        raise PermissionDenied("You don't have permission to create teams.")
+    
+    if request.method == 'POST':
+        form = TeamCreateForm(request.POST)
+        if form.is_valid():
+            try:
+                team = form.save()
+                messages.success(request, f'Team "{team.name}" created successfully!')
+                return redirect('agentes_list')
+            except Exception as e:
+                messages.error(request, f'Error creating team: {str(e)}')
+    else:
+        form = TeamCreateForm()
+    
+    context = {
+        'title': 'Create New Team',
+        'form': form,
+        'current_profile': current_profile,
+    }
+    return render(request, 'conversations/team_create.html', context)
 
 
 @login_required

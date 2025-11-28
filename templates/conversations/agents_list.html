@@ -47,11 +47,16 @@
 <div class="content">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2 style="margin: 0; color: #333;">Agents ({{ profiles|length }} total)</h2>
-        {% if current_profile.role == 'Admin' or current_profile.role == 'Director' %}
-        <a href="{% url 'agent_create' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
-            + Create New User
-        </a>
-        {% endif %}
+        <div style="display: flex; gap: 0.5rem;">
+            {% if current_profile.role == 'Admin' or current_profile.role == 'Director' %}
+            <a href="{% url 'team_create' %}" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">
+                + Create Team
+            </a>
+            <a href="{% url 'agent_create' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                + Create New User
+            </a>
+            {% endif %}
+        </div>
     </div>
     
     {% if profiles %}
