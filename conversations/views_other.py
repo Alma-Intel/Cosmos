@@ -307,6 +307,10 @@ def team_detail(request, team_id):
         team=team
     ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
+    # Check if user can view ALMA fields (admin only)
+    from .permissions import can_view_alma_uuid
+    can_view_alma = can_view_alma_uuid(request.user)
+    
     context = {
         'title': f'Team: {team.name}',
         'team': team,
@@ -315,6 +319,7 @@ def team_detail(request, team_id):
         'current_profile': current_profile,
         'can_edit_team': can_edit_team,
         'available_managers': available_managers,
+        'can_view_alma': can_view_alma,
     }
     return render(request, 'conversations/team_detail.html', context)
 

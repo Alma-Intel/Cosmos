@@ -145,6 +145,12 @@
             <div class="info-label">Managers</div>
             <div class="info-value">{{ managers|length }}</div>
         </div>
+        {% if can_view_alma %}
+        <div class="info-item">
+            <div class="info-label">ALMA Internal Organization</div>
+            <div class="info-value"><code>{{ team.alma_internal_organization|default:"—" }}</code></div>
+        </div>
+        {% endif %}
         <div class="info-item">
             <div class="info-label">Created At</div>
             <div class="info-value">{{ team.created_at|date:"Y-m-d H:i" }}</div>
