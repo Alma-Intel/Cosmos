@@ -96,7 +96,7 @@
                 </td>
                 <td style="padding: 1rem;">{{ conv.lastUpdate|date:"Y-m-d H:i" }}</td>
                 <td style="padding: 1rem;">
-                    <a href="{% url 'conversation_detail' conv._id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                    <a href="{% url 'conversation_detail' conv.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                         View Details
                     </a>
                 </td>

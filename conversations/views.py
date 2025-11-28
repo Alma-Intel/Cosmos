@@ -77,6 +77,10 @@ def conversation_list(request):
     # Get conversations
     conversations = list(collection.find(query).sort('lastUpdate', -1))
     
+    # Convert ObjectId to string for each conversation (for template access)
+    for conv in conversations:
+        conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
+    
     # Get filter options
     all_sellers = get_all_sellers()
     all_tags = get_all_tags()

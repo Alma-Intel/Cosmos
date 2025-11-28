@@ -83,14 +83,24 @@ WSGI_APPLICATION = 'crm_project.wsgi.application'
 # Railway provides DATABASE_URL, but we also support individual variables
 
 # Try to get DATABASE_URL first (Railway format)
+# Railway variable references like ${{Service.Variable}} should be expanded by Railway
+# But if it comes through with quotes, strip them
 database_url = config('DATABASE_URL', default=None)
 
 if database_url:
-    # Parse DATABASE_URL (Railway format: postgresql://user:password@host:port/dbname)
-    DATABASES = {
-        'default': dj_database_url.parse(database_url)
-    }
-else:
+    # Remove quotes if present (Railway sometimes passes quoted values)
+    database_url = database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if database_url and not database_url.startswith('${{'):
+        # Parse DATABASE_URL (Railway format: postgresql://user:password@host:port/dbname)
+        DATABASES = {
+            'default': dj_database_url.parse(database_url)
+        }
+    else:
+        # Variable not expanded, use fallback
+        database_url = None
+
+if not database_url or database_url.startswith('${{'):
     # Fall back to individual environment variables
     DATABASES = {
         'default': {
