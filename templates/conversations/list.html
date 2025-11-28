@@ -126,6 +126,16 @@
     {% else %}
     <p style="padding: 2rem; text-align: center; color: #666;">No conversations found.</p>
     {% endif %}
+    
+    {% if debug_info %}
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+        <strong>Debug Info:</strong><br>
+        Database: {{ debug_info.db_name }}<br>
+        Collection: {{ debug_info.collection_name }}<br>
+        Total matching documents: {{ debug_info.total_count }}<br>
+        Query: <code>{{ debug_info.query }}</code>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

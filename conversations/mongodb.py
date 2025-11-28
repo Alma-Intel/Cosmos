@@ -48,6 +48,10 @@ def get_conversations_collection():
 def get_all_sellers():
     """Get all unique seller IDs from conversations"""
     collection = get_conversations_collection()
+    # Check if collection is empty
+    if collection.count_documents({}) == 0:
+        return []
+    
     sellers = collection.distinct("envolvedSellers")
     # Flatten the array and get unique values
     all_sellers = set()

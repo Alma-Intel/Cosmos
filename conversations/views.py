@@ -5,6 +5,7 @@ from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from .mongodb import (
     get_conversations_collection,
     get_all_sellers,
@@ -75,21 +76,51 @@ def conversation_list(request):
             query = {'$and': and_conditions} if len(and_conditions) > 1 else and_conditions[0]
     
     # Get conversations
+    # First, check total count for debugging
+    total_count = collection.count_documents(query)
+    
     conversations = list(collection.find(query).sort('lastUpdate', -1))
     
     # Convert ObjectId to string for each conversation (for template access)
     for conv in conversations:
         conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
     
-    # Get filter options
-    all_sellers = get_all_sellers()
-    all_tags = get_all_tags()
-    all_sales_stages = get_all_sales_stages()
+    # Get filter options (with error handling)
+    try:
+        all_sellers = get_all_sellers()
+    except Exception as e:
+        all_sellers = []
+        if settings.DEBUG:
+            print(f"Error getting sellers: {e}")
+    
+    try:
+        all_tags = get_all_tags()
+    except Exception as e:
+        all_tags = []
+        if settings.DEBUG:
+            print(f"Error getting tags: {e}")
+    
+    try:
+        all_sales_stages = get_all_sales_stages()
+    except Exception as e:
+        all_sales_stages = []
+        if settings.DEBUG:
+            print(f"Error getting sales stages: {e}")
     
     # Pagination
     paginator = Paginator(conversations, 20)  # Show 20 conversations per page
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
+    
+    # Debug info (only in DEBUG mode)
+    debug_info = None
+    if settings.DEBUG:
+        debug_info = {
+            'query': str(query),
+            'total_count': total_count,
+            'collection_name': settings.MONGODB_COLLECTION_NAME,
+            'db_name': settings.MONGODB_DB_NAME,
+        }
     
     context = {
         'conversations': page_obj,
@@ -100,6 +131,7 @@ def conversation_list(request):
         'current_sales_stage': sales_stage,
         'current_tag': tag,
         'current_search': search,
+        'debug_info': debug_info,
     }
     
     return render(request, 'conversations/list.html', context)
