@@ -47,20 +47,38 @@ def get_conversations_collection():
 
 def get_all_sellers():
     """Get all unique seller IDs from conversations"""
-    collection = get_conversations_collection()
-    # Check if collection is empty
-    if collection.count_documents({}) == 0:
-        return []
-    
-    sellers = collection.distinct("envolvedSellers")
-    # Flatten the array and get unique values
-    all_sellers = set()
-    for seller_list in sellers:
-        if isinstance(seller_list, list):
-            all_sellers.update(seller_list)
-        else:
-            all_sellers.add(seller_list)
-    return sorted(list(all_sellers))
+    try:
+        collection = get_conversations_collection()
+        # Check if collection is empty
+        if collection.count_documents({}) == 0:
+            return []
+        
+        # Use aggregation pipeline for better performance
+        pipeline = [
+            {'$unwind': '$envolvedSellers'},
+            {'$group': {'_id': '$envolvedSellers'}},
+            {'$project': {'_id': 0, 'seller': '$_id'}}
+        ]
+        
+        sellers = list(collection.aggregate(pipeline, allowDiskUse=True))
+        all_sellers = [item['seller'] for item in sellers if item.get('seller')]
+        
+        return sorted(list(set(all_sellers)))
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error getting sellers: {e}")
+        # Fallback to distinct if aggregation fails
+        try:
+            sellers = collection.distinct("envolvedSellers")
+            all_sellers = set()
+            for seller_list in sellers:
+                if isinstance(seller_list, list):
+                    all_sellers.update(seller_list)
+                else:
+                    all_sellers.add(seller_list)
+            return sorted(list(all_sellers))
+        except:
+            return []
 
 
 def get_all_tags():
@@ -95,8 +113,10 @@ def get_uuid_to_email_mapping():
         db = client['dicts']
         collection = db['dicts']
         
-        # Find document with name "uuidToEmail"
-        doc = collection.find_one({'name': 'uuidToEmail'})
+        # Find document with name "uuidToEmailDict" or "uuidToEmail"
+        doc = collection.find_one({'name': 'uuidToEmailDict'})
+        if not doc:
+            doc = collection.find_one({'name': 'uuidToEmail'})
         
         if settings.DEBUG:
             print(f"uuidToEmail document found: {doc is not None}")
