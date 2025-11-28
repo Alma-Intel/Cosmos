@@ -188,14 +188,75 @@ def team_detail(request, team_id):
     """View team details with manager and members"""
     team = get_object_or_404(Team, pk=team_id)
     
+    # Get current user's profile for permission checks
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Check if user can edit/delete team (admins and directors)
+    can_edit_team = current_profile.is_admin() or current_profile.is_director()
+    
     # Get managers/directors in this team
     managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
     
     # Get all members
     members = team.members.all().select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
-    # Get current user's profile for permission checks
-    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    # Get managers/directors in this team (before POST handling)
+    managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
+    
+    # Get all members (before POST handling)
+    members = team.members.all().select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+    
+    # Handle POST requests for team management
+    if request.method == 'POST' and can_edit_team:
+        if 'change_manager' in request.POST:
+            new_manager_id = request.POST.get('new_manager')
+            if new_manager_id:
+                try:
+                    new_manager = UserProfile.objects.get(pk=new_manager_id)
+                    # Verify new manager has appropriate role
+                    if new_manager.role in ['Manager', 'Director', 'Admin']:
+                        # Add the new manager to the team
+                        new_manager.team = team
+                        new_manager.save()
+                        messages.success(request, f'Manager {new_manager.get_display_name()} added to team')
+                        return redirect('team_detail', team_id=team_id)
+                    else:
+                        messages.error(request, 'Selected user must be a Manager, Director, or Admin')
+                except UserProfile.DoesNotExist:
+                    messages.error(request, 'Selected manager not found')
+        elif 'remove_manager' in request.POST:
+            manager_id = request.POST.get('remove_manager')
+            if manager_id:
+                try:
+                    manager_to_remove = UserProfile.objects.get(pk=manager_id, team=team)
+                    # Only remove if there are other managers, or if it's the only one, warn
+                    other_managers = managers.exclude(pk=manager_id)
+                    if other_managers.exists():
+                        manager_to_remove.team = None
+                        manager_to_remove.save()
+                        messages.success(request, f'Manager {manager_to_remove.get_display_name()} removed from team')
+                        return redirect('team_detail', team_id=team_id)
+                    else:
+                        messages.error(request, 'Cannot remove the last manager. Teams must have at least one Manager, Director, or Admin.')
+                except UserProfile.DoesNotExist:
+                    messages.error(request, 'Manager not found')
+        elif 'delete_team' in request.POST:
+            # Delete team - move all members to no team
+            team_name = team.name
+            all_members = team.members.all()
+            for member in all_members:
+                member.team = None
+                member.save()
+            team.delete()
+            messages.success(request, f'Team "{team_name}" deleted successfully')
+            return redirect('teams_list')
+    
+    # Get available managers for change manager dropdown
+    available_managers = UserProfile.objects.filter(
+        role__in=['Manager', 'Director', 'Admin']
+    ).exclude(
+        team=team
+    ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
     context = {
         'title': f'Team: {team.name}',
@@ -203,6 +264,8 @@ def team_detail(request, team_id):
         'managers': managers,
         'members': members,
         'current_profile': current_profile,
+        'can_edit_team': can_edit_team,
+        'available_managers': available_managers,
     }
     return render(request, 'conversations/team_detail.html', context)
 

@@ -108,6 +108,24 @@
 {% endblock %}
 
 {% block content %}
+{% if can_edit_team %}
+<div class="detail-section" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin: 0; color: #856404;">Team Management</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">You can manage this team</p>
+        </div>
+        <form method="post" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this team? All members will be unassigned from the team.');">
+            {% csrf_token %}
+            <input type="hidden" name="delete_team" value="1">
+            <button type="submit" class="btn btn-secondary" style="background: #dc3545; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
+                Delete Team
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <div class="detail-section">
     <h2>Team Information</h2>
     <div class="info-grid">
@@ -139,7 +157,25 @@
 </div>
 
 <div class="detail-section">
-    <h2>Manager(s)</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Manager(s)</h2>
+        {% if can_edit_team %}
+        <div>
+            <form method="post" style="display: inline-block;">
+                {% csrf_token %}
+                <select name="new_manager" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
+                    <option value="">Select Manager to Add</option>
+                    {% for manager in available_managers %}
+                    <option value="{{ manager.id }}">{{ manager|display_name }} ({{ manager.role }})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="change_manager" class="btn btn-primary" style="padding: 0.5rem 1rem;">
+                    Add Manager
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
     {% if managers %}
     <div class="members-list">
         {% for manager in managers %}
@@ -157,6 +193,15 @@
                 </div>
                 {% if manager.cell_phone %}
                 <div><strong>Phone:</strong> {{ manager.cell_phone }}</div>
+                {% endif %}
+                {% if can_edit_team and managers|length > 1 %}
+                <form method="post" style="margin-top: 0.5rem; display: inline-block;">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_manager" value="{{ manager.id }}">
+                    <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove this manager from the team?');">
+                        Remove from Team
+                    </button>
+                </form>
                 {% endif %}
             </div>
         </div>
