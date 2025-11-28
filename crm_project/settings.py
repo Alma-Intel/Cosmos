@@ -113,6 +113,37 @@ if not database_url or database_url.startswith('${{'):
         }
     }
 
+# Second PostgreSQL database for events
+# Try to get EVENTS_DATABASE_URL first (Railway format)
+events_database_url = config('EVENTS_DATABASE_URL', default=None)
+
+if events_database_url:
+    # Remove quotes if present
+    events_database_url = events_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if events_database_url and not events_database_url.startswith('${{'):
+        # Add events database to DATABASES
+        DATABASES['events'] = dj_database_url.parse(events_database_url)
+    else:
+        events_database_url = None
+
+if not events_database_url or events_database_url.startswith('${{'):
+    # Fall back to individual environment variables for events database
+    DATABASES['events'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('EVENTS_DB_NAME', default='events_db'),
+        'USER': config('EVENTS_DB_USER', default='postgres'),
+        'PASSWORD': config('EVENTS_DB_PASSWORD', default=''),
+        'HOST': config('EVENTS_DB_HOST', default='localhost'),
+        'PORT': config('EVENTS_DB_PORT', default='5432'),
+    }
+
+# Events database table name (configurable)
+EVENTS_TABLE_NAME = config('EVENTS_TABLE_NAME', default='events')
+EVENTS_CONVERSATION_ID_COLUMN = config('EVENTS_CONVERSATION_ID_COLUMN', default='conversation_infobip_uuid')
+EVENTS_TIMESTAMP_COLUMN = config('EVENTS_TIMESTAMP_COLUMN', default='datetime')
+EVENTS_ORIGIN_COLUMN = config('EVENTS_ORIGIN_COLUMN', default='dialogue')
+
 # MongoDB Configuration
 # Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
 # Check for MONGO_URL first, then fall back to MONGODB_URL

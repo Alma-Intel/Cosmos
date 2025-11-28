@@ -16,6 +16,7 @@ from .mongodb import (
     get_uuid_to_email_mapping,
     map_seller_to_email
 )
+from .events_db import get_events_for_conversation
 
 
 @login_required
@@ -291,6 +292,52 @@ def conversation_detail(request, conversation_id):
         if settings.DEBUG and seller in uuid_to_email_map:
             print(f"Mapped {seller} -> {mapped}")
     
+    # Fetch events for this conversation from the events database
+    chat_id = conversation.get('chatId', conversation_id)
+    events = get_events_for_conversation(chat_id)
+    
+    # Parse event timestamps to datetime objects for display
+    for event in events:
+        timestamp_col = getattr(settings, 'EVENTS_TIMESTAMP_COLUMN', 'datetime')
+        # Handle both 'datetime' column name and any timestamp field
+        datetime_value = event.get('datetime') or event.get(timestamp_col)
+        
+        if datetime_value:
+            try:
+                dt = None
+                if isinstance(datetime_value, str):
+                    # Try parsing ISO format
+                    try:
+                        dt = datetime.fromisoformat(datetime_value.replace('Z', '+00:00'))
+                    except ValueError:
+                        try:
+                            dt = datetime.strptime(datetime_value, '%Y-%m-%dT%H:%M:%S.%f%z')
+                        except ValueError:
+                            try:
+                                dt = datetime.strptime(datetime_value, '%Y-%m-%dT%H:%M:%S%z')
+                            except ValueError:
+                                # Try PostgreSQL timestamp format
+                                try:
+                                    dt = datetime.strptime(datetime_value, '%Y-%m-%d %H:%M:%S.%f%z')
+                                except ValueError:
+                                    try:
+                                        dt = datetime.strptime(datetime_value, '%Y-%m-%d %H:%M:%S%z')
+                                    except ValueError:
+                                        dt = None
+                elif isinstance(datetime_value, datetime):
+                    # Already a datetime object
+                    dt = datetime_value
+                
+                if dt:
+                    # Ensure it's timezone-aware
+                    if dt.tzinfo is None:
+                        dt = timezone.make_aware(dt, timezone.utc)
+                    # Convert to user's timezone
+                    event['datetime_parsed'] = timezone.localtime(dt)
+            except Exception as e:
+                if settings.DEBUG:
+                    print(f"Error parsing event timestamp: {e}")
+    
     # Normalize tags - convert string to list if needed
     metadata = conversation.get('metadata', {})
     tags = metadata.get('clientTagsInput')
@@ -305,7 +352,9 @@ def conversation_detail(request, conversation_id):
         'messages': messages,
         'metadata': metadata,
         'envolved_sellers': envolved_sellers_display,
+        'events': events,
     }
     
     return render(request, 'conversations/detail.html', context)
+
 

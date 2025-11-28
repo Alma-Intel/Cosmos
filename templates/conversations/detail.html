@@ -230,6 +230,84 @@
 </div>
 
 <div class="detail-section">
+    <h2>Detected Events ({{ events|length }} events)</h2>
+    {% if events %}
+    <div class="messages-container">
+        {% for event in events %}
+        <div class="message" style="border-left: 4px solid #28a745;">
+            <div class="message-header">
+                <div>
+                    <span class="message-type" style="background: #28a745;">Event</span>
+                    {% if event.event_type %}
+                    <span class="message-type" style="background: #17a2b8;">{{ event.event_type }}</span>
+                    {% endif %}
+                    {% if event.event_subtype %}
+                    <span class="message-type" style="background: #6c757d;">{{ event.event_subtype }}</span>
+                    {% endif %}
+                </div>
+                <div class="message-timestamp">
+                    {% if event.datetime_parsed %}
+                        <span class="event-timestamp" data-utc-time="{{ event.datetime|date:'c' }}">{{ event.datetime_parsed|date:"Y-m-d H:i:s" }}</span>
+                    {% elif event.datetime %}
+                        <span class="event-timestamp" data-utc-time="{{ event.datetime|date:'c' }}">{{ event.datetime|date:"Y-m-d H:i:s" }}</span>
+                    {% else %}
+                        <span style="color: #999;">No timestamp</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="message-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Event Type</div>
+                        <div style="font-size: 0.95rem; color: #333; font-weight: 500;">{{ event.event_type|default:"—" }}</div>
+                    </div>
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Datetime</div>
+                        <div style="font-size: 0.95rem; color: #333;">
+                            {% if event.datetime_parsed %}
+                                <span class="event-timestamp" data-utc-time="{{ event.datetime|date:'c' }}">{{ event.datetime_parsed|date:"Y-m-d H:i:s" }}</span>
+                            {% elif event.datetime %}
+                                <span class="event-timestamp" data-utc-time="{{ event.datetime|date:'c' }}">{{ event.datetime|date:"Y-m-d H:i:s" }}</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Origin</div>
+                        <div style="font-size: 0.95rem; color: #333;">
+                            {% if event.dialogue %}
+                                <span style="background: #e7f3ff; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">Dialogue: {{ event.dialogue|truncatechars:30 }}</span>
+                            {% elif event.agent_infobip_uuid %}
+                                <span style="background: #fff3cd; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">Agent: {{ event.agent_infobip_uuid|truncatechars:30 }}</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if event.event_subtype %}
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Event Subtype</div>
+                        <div style="font-size: 0.95rem; color: #333;">{{ event.event_subtype }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if event.json %}
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Additional Data</div>
+                    <pre style="font-size: 0.85rem; color: #333; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{ event.json }}</pre>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #666; padding: 2rem;">No events detected for this conversation.</p>
+    {% endif %}
+</div>
+
+<div class="detail-section">
     <h2>Chat History ({{ messages|length }} messages)</h2>
     <div class="messages-container">
         {% for message in messages %}
