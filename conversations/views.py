@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from datetime import datetime
 from .mongodb import (
     get_conversations_collection,
     get_all_sellers,
@@ -95,9 +96,31 @@ def conversation_list(request):
             print(f"Sample entry: {sample_uuid} -> {uuid_to_email_map[sample_uuid]}")
     
     # Convert ObjectId to string for each conversation (for template access)
-    # Also map seller UUIDs to emails
+    # Also map seller UUIDs to emails and parse lastUpdate
     for conv in conversations:
         conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
+        
+        # Parse lastUpdate string to datetime object if it exists
+        if 'lastUpdate' in conv and conv['lastUpdate']:
+            try:
+                # Handle ISO format string: "2025-08-16T20:25:57.910+00:00"
+                if isinstance(conv['lastUpdate'], str):
+                    # Try parsing with timezone
+                    try:
+                        conv['lastUpdate'] = datetime.fromisoformat(conv['lastUpdate'].replace('Z', '+00:00'))
+                    except ValueError:
+                        # Fallback to simpler format
+                        try:
+                            conv['lastUpdate'] = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
+                        except ValueError:
+                            try:
+                                conv['lastUpdate'] = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
+                            except ValueError:
+                                # If all parsing fails, keep as string
+                                pass
+            except Exception as e:
+                if settings.DEBUG:
+                    print(f"Error parsing lastUpdate for conversation {conv.get('chatId', 'unknown')}: {e}")
         
         # Map seller UUIDs to emails
         if 'envolvedSellers' in conv and conv['envolvedSellers']:
@@ -227,6 +250,28 @@ def conversation_detail(request, conversation_id):
     
     # Convert ObjectId to string for template (add 'id' field that templates can access)
     conversation['id'] = str(conversation['_id'])
+    
+    # Parse lastUpdate string to datetime object if it exists
+    if 'lastUpdate' in conversation and conversation['lastUpdate']:
+        try:
+            # Handle ISO format string: "2025-08-16T20:25:57.910+00:00"
+            if isinstance(conversation['lastUpdate'], str):
+                # Try parsing with timezone
+                try:
+                    conversation['lastUpdate'] = datetime.fromisoformat(conversation['lastUpdate'].replace('Z', '+00:00'))
+                except ValueError:
+                    # Fallback to simpler format
+                    try:
+                        conversation['lastUpdate'] = datetime.strptime(conversation['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
+                    except ValueError:
+                        try:
+                            conversation['lastUpdate'] = datetime.strptime(conversation['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
+                        except ValueError:
+                            # If all parsing fails, keep as string
+                            pass
+        except Exception as e:
+            if settings.DEBUG:
+                print(f"Error parsing lastUpdate for conversation {conversation.get('chatId', 'unknown')}: {e}")
     
     # Get UUID to email mapping and map seller UUIDs to emails
     uuid_to_email_map = get_uuid_to_email_mapping()
