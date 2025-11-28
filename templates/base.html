@@ -1,3 +1,4 @@
+{% load user_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,7 +234,7 @@
             <h1>{% block header_title %}ALMA COSMOS - {% endblock %}</h1>
             {% if user.is_authenticated %}
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="font-size: 0.9rem;">Logged in as <strong>{{ user.username }}</strong></span>
+                <span style="font-size: 0.9rem;">Logged in as <strong>{{ user|display_name }}</strong></span>
                 <a href="{% url 'logout' %}" style="color: white; text-decoration: none; padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); border-radius: 4px; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Logout</a>
             </div>
             {% endif %}
