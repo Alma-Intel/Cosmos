@@ -88,6 +88,12 @@ def conversation_list(request):
     # Get UUID to email mapping (once, use for all operations)
     uuid_to_email_map = get_uuid_to_email_mapping()
     
+    if settings.DEBUG:
+        print(f"UUID to email map loaded with {len(uuid_to_email_map)} entries")
+        if uuid_to_email_map:
+            sample_uuid = list(uuid_to_email_map.keys())[0]
+            print(f"Sample entry: {sample_uuid} -> {uuid_to_email_map[sample_uuid]}")
+    
     # Convert ObjectId to string for each conversation (for template access)
     # Also map seller UUIDs to emails
     for conv in conversations:
@@ -95,10 +101,15 @@ def conversation_list(request):
         
         # Map seller UUIDs to emails
         if 'envolvedSellers' in conv and conv['envolvedSellers']:
-            conv['envolvedSellersDisplay'] = [
-                map_seller_to_email(seller, uuid_to_email_map) 
-                for seller in conv['envolvedSellers']
-            ]
+            conv['envolvedSellersDisplay'] = []
+            for seller in conv['envolvedSellers']:
+                mapped = map_seller_to_email(seller, uuid_to_email_map)
+                conv['envolvedSellersDisplay'].append(mapped)
+                if settings.DEBUG:
+                    if seller in uuid_to_email_map:
+                        print(f"Mapped {seller} -> {mapped}")
+                    else:
+                        print(f"No mapping for {seller}, using UUID")
         else:
             conv['envolvedSellersDisplay'] = []
     
@@ -221,10 +232,12 @@ def conversation_detail(request, conversation_id):
     # Get UUID to email mapping and map seller UUIDs to emails
     uuid_to_email_map = get_uuid_to_email_mapping()
     envolved_sellers = conversation.get('envolvedSellers', [])
-    envolved_sellers_display = [
-        map_seller_to_email(seller, uuid_to_email_map) 
-        for seller in envolved_sellers
-    ]
+    envolved_sellers_display = []
+    for seller in envolved_sellers:
+        mapped = map_seller_to_email(seller, uuid_to_email_map)
+        envolved_sellers_display.append(mapped)
+        if settings.DEBUG and seller in uuid_to_email_map:
+            print(f"Mapped {seller} -> {mapped}")
     
     # Normalize tags - convert string to list if needed
     metadata = conversation.get('metadata', {})

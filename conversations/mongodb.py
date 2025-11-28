@@ -98,18 +98,78 @@ def get_uuid_to_email_mapping():
         # Find document with name "uuidToEmail"
         doc = collection.find_one({'name': 'uuidToEmail'})
         
-        if doc and 'dict' in doc:
-            # Return the dict mapping UUIDs to emails
-            return doc['dict']
+        if settings.DEBUG:
+            print(f"uuidToEmail document found: {doc is not None}")
+            if doc:
+                print(f"Document keys: {list(doc.keys())}")
+                # Print first few entries to see structure
+                for key in list(doc.keys())[:5]:
+                    if key not in ['_id', 'name']:
+                        print(f"  {key}: {type(doc[key])}")
+        
+        if doc:
+            # The mapping could be in 'dict' field or directly in the document
+            if 'dict' in doc:
+                mapping = doc['dict']
+            elif 'value' in doc:
+                mapping = doc['value']
+            elif 'data' in doc:
+                mapping = doc['data']
+            else:
+                # Try to use the document itself (excluding _id and name)
+                mapping = {k: v for k, v in doc.items() if k not in ['_id', 'name']}
+            
+            if isinstance(mapping, dict):
+                if settings.DEBUG:
+                    print(f"Mapping contains {len(mapping)} entries")
+                    # Show a sample mapping
+                    if mapping:
+                        sample_key = list(mapping.keys())[0]
+                        print(f"Sample mapping: {sample_key} -> {mapping[sample_key]}")
+                return mapping
+            elif isinstance(mapping, list):
+                # If it's a list, convert to dict (assuming list of {uuid: email} objects)
+                if settings.DEBUG:
+                    print("Mapping is a list, attempting to convert...")
+                result = {}
+                for item in mapping:
+                    if isinstance(item, dict):
+                        # Could be {uuid: email} or {key: uuid, value: email}
+                        if 'key' in item and 'value' in item:
+                            result[item['key']] = item['value']
+                        elif len(item) == 1:
+                            result.update(item)
+                if settings.DEBUG:
+                    print(f"Converted list to dict with {len(result)} entries")
+                return result
+        
+        if settings.DEBUG:
+            print("No uuidToEmail mapping found or invalid format")
         return {}
     except Exception as e:
         # If there's an error, return empty dict
+        import traceback
         if settings.DEBUG:
             print(f"Error getting uuidToEmail mapping: {e}")
+            print(traceback.format_exc())
         return {}
 
 
 def map_seller_to_email(seller_uuid, uuid_to_email_map):
     """Map a seller UUID to email, or return UUID if no mapping exists"""
-    return uuid_to_email_map.get(seller_uuid, seller_uuid)
+    if not seller_uuid:
+        return seller_uuid
+    
+    # Try exact match first
+    if seller_uuid in uuid_to_email_map:
+        return uuid_to_email_map[seller_uuid]
+    
+    # Try case-insensitive match
+    seller_lower = seller_uuid.lower()
+    for key, value in uuid_to_email_map.items():
+        if key.lower() == seller_lower:
+            return value
+    
+    # No match found, return UUID
+    return seller_uuid
 
