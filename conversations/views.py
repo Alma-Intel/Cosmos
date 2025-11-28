@@ -192,8 +192,8 @@ def conversation_detail(request, conversation_id):
     messages = conversation.get('mensagens', [])
     messages.sort(key=lambda x: x.get('messageTimestamp', ''))
     
-    # Convert ObjectId to string for template
-    conversation['_id'] = str(conversation['_id'])
+    # Convert ObjectId to string for template (add 'id' field that templates can access)
+    conversation['id'] = str(conversation['_id'])
     
     # Normalize tags - convert string to list if needed
     metadata = conversation.get('metadata', {})
