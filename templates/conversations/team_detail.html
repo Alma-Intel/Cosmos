@@ -219,7 +219,25 @@
 </div>
 
 <div class="detail-section">
-    <h2>Team Members ({{ members|length }})</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0;">Team Members ({{ members|length }})</h2>
+        {% if can_manage_members %}
+        <div>
+            <form method="post" style="display: inline-block;">
+                {% csrf_token %}
+                <select name="member_id" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
+                    <option value="">Select Member to Add</option>
+                    {% for member in available_members %}
+                    <option value="{{ member.id }}">{{ member|display_name }} ({{ member.role }})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="add_member" class="btn btn-primary" style="padding: 0.5rem 1rem;">
+                    Add Member
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
     {% if members %}
     <div class="members-list">
         {% for member in members %}
@@ -238,7 +256,7 @@
                 {% if member.cell_phone %}
                 <div><strong>Phone:</strong> {{ member.cell_phone }}</div>
                 {% endif %}
-                {% if can_edit_team %}
+                {% if can_manage_members %}
                 <form method="post" style="margin-top: 0.5rem; display: inline-block;">
                     {% csrf_token %}
                     <input type="hidden" name="remove_member" value="{{ member.id }}">

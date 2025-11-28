@@ -228,6 +228,14 @@ def team_detail(request, team_id):
     # Check if user can edit/delete team (admins and directors)
     can_edit_team = current_profile.is_admin() or current_profile.is_director()
     
+    # Check if user is a manager of this team (can add/remove members but not delete team or manage managers)
+    is_team_manager = (current_profile.is_manager() and 
+                       current_profile.team == team and 
+                       current_profile.role in ['Manager', 'Director', 'Admin'])
+    
+    # Can manage members (add/remove) - admins, directors, or team managers
+    can_manage_members = can_edit_team or is_team_manager
+    
     # Get managers/directors in this team
     managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name')
     
@@ -237,8 +245,29 @@ def team_detail(request, team_id):
     members = team.members.exclude(id__in=manager_ids).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
     # Handle POST requests for team management
-    if request.method == 'POST' and can_edit_team:
-        if 'change_manager' in request.POST:
+    if request.method == 'POST':
+        if 'add_member' in request.POST:
+            # Admins, directors, and team managers can add members
+            if not can_manage_members:
+                raise PermissionDenied("You don't have permission to add members to this team.")
+            member_id = request.POST.get('member_id')
+            if member_id:
+                try:
+                    member_to_add = UserProfile.objects.get(pk=member_id)
+                    # Verify member is from same organization
+                    if team.alma_internal_organization and member_to_add.alma_internal_organization != team.alma_internal_organization:
+                        messages.error(request, 'Selected user must be from the same organization as the team.')
+                    else:
+                        member_to_add.team = team
+                        member_to_add.save()
+                        messages.success(request, f'Member {member_to_add.get_display_name()} added to team')
+                        return redirect('team_detail', team_id=team_id)
+                except UserProfile.DoesNotExist:
+                    messages.error(request, 'Selected member not found')
+        elif 'change_manager' in request.POST:
+            # Only admins and directors can add managers
+            if not can_edit_team:
+                raise PermissionDenied("You don't have permission to add managers to this team.")
             new_manager_id = request.POST.get('new_manager')
             if new_manager_id:
                 try:
@@ -255,6 +284,9 @@ def team_detail(request, team_id):
                 except UserProfile.DoesNotExist:
                     messages.error(request, 'Selected manager not found')
         elif 'remove_manager' in request.POST:
+            # Only admins and directors can remove managers
+            if not can_edit_team:
+                raise PermissionDenied("You don't have permission to remove managers from this team.")
             manager_id = request.POST.get('remove_manager')
             if manager_id:
                 try:
@@ -271,6 +303,9 @@ def team_detail(request, team_id):
                 except UserProfile.DoesNotExist:
                     messages.error(request, 'Manager not found')
         elif 'remove_member' in request.POST:
+            # Admins, directors, and team managers can remove members
+            if not can_manage_members:
+                raise PermissionDenied("You don't have permission to remove members from this team.")
             member_id = request.POST.get('remove_member')
             if member_id:
                 try:
@@ -290,6 +325,9 @@ def team_detail(request, team_id):
                 except UserProfile.DoesNotExist:
                     messages.error(request, 'Member not found')
         elif 'delete_team' in request.POST:
+            # Only admins and directors can delete teams
+            if not can_edit_team:
+                raise PermissionDenied("You don't have permission to delete this team.")
             # Delete team - move all members to no team
             team_name = team.name
             all_members = team.members.all()
@@ -323,6 +361,24 @@ def team_detail(request, team_id):
     
     available_managers = available_managers_query.select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
+    # Get available members to add to team (users not already in this team, from same organization)
+    available_members_query = UserProfile.objects.exclude(team=team)
+    
+    # Filter by team's organization
+    if team.alma_internal_organization:
+        available_members_query = available_members_query.filter(
+            alma_internal_organization=team.alma_internal_organization
+        )
+    else:
+        # If team has no organization, only show users with no organization
+        available_members_query = available_members_query.filter(
+            alma_internal_organization__isnull=True
+        ) | available_members_query.filter(
+            alma_internal_organization=''
+        )
+    
+    available_members = available_members_query.select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+    
     # Check if user can view ALMA fields (admin only)
     from .permissions import can_view_alma_uuid
     can_view_alma = can_view_alma_uuid(request.user)
@@ -334,7 +390,9 @@ def team_detail(request, team_id):
         'members': members,
         'current_profile': current_profile,
         'can_edit_team': can_edit_team,
+        'can_manage_members': can_manage_members,
         'available_managers': available_managers,
+        'available_members': available_members,
         'can_view_alma': can_view_alma,
     }
     return render(request, 'conversations/team_detail.html', context)
