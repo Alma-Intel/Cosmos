@@ -274,7 +274,7 @@
         </div>
         {% endif %}
         
-        {% if current_profile.is_admin %}
+        {% if can_view_alma %}
         <div class="form-group">
             <label for="{{ form.new_password.id_for_label }}">{{ form.new_password.label }}</label>
             {{ form.new_password }}
