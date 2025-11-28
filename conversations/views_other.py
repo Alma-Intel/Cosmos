@@ -245,14 +245,14 @@ def profile(request):
         form = ProfileForm(request.POST, instance=request.user, profile_instance=profile_obj)
         if form.is_valid():
             # Update user fields
-            request.user.first_name = form.cleaned_data['first_name']
-            request.user.last_name = form.cleaned_data['last_name']
-            request.user.email = form.cleaned_data['email']
+            request.user.first_name = form.cleaned_data.get('first_name', '')
+            request.user.last_name = form.cleaned_data.get('last_name', '')
+            request.user.email = form.cleaned_data.get('email', '')
             request.user.save()
             
             # Update profile fields
-            profile_obj.external_uuid = form.cleaned_data['external_uuid']
-            profile_obj.cell_phone = form.cleaned_data['cell_phone']
+            profile_obj.external_uuid = form.cleaned_data.get('external_uuid', '')
+            profile_obj.cell_phone = form.cleaned_data.get('cell_phone', '')
             profile_obj.save()
             
             messages.success(request, 'Profile updated successfully!')
@@ -264,6 +264,7 @@ def profile(request):
         'title': 'Profile',
         'form': form,
         'profile': profile_obj,
+        'user': request.user,
     }
     return render(request, 'conversations/profile.html', context)
 

@@ -27,7 +27,7 @@ class AgentEditForm(forms.Form):
         })
     )
     email = forms.EmailField(
-        required=True,
+        required=False,
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
@@ -253,7 +253,7 @@ class ProfileForm(forms.Form):
         })
     )
     email = forms.EmailField(
-        required=True,
+        required=False,
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-control',

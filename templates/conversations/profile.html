@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load user_filters %}
 
 {% block title %}ALMA COSMOS - Profile{% endblock %}
 
@@ -6,189 +7,258 @@
 
 {% block extra_css %}
 <style>
-    .profile-container {
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    
-    .profile-form {
+    .detail-section {
         background: white;
-        padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 0.95rem;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
     }
     
     .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     
     .form-group label {
         display: block;
-        font-weight: 600;
-        color: #333;
+        font-weight: 500;
         margin-bottom: 0.5rem;
-        font-size: 0.95rem;
+        color: #555;
     }
     
-    .form-control {
+    .form-group input,
+    .form-group select {
         width: 100%;
         padding: 0.75rem;
         border: 1px solid #ddd;
         border-radius: 4px;
         font-size: 0.95rem;
-        transition: border-color 0.3s;
     }
     
-    .form-control:focus {
+    .form-group input:focus,
+    .form-group select:focus {
         outline: none;
         border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
-    .btn-save {
-        background: #667eea;
-        color: white;
-        padding: 0.75rem 2rem;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
-    
-    .btn-save:hover {
-        background: #5568d3;
-    }
-    
-    .alert {
-        padding: 1rem;
-        border-radius: 4px;
-        margin-bottom: 1.5rem;
-    }
-    
-    .alert-success {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    
-    .alert-error {
-        background: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    
-    .form-errors {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 0.75rem;
-        border-radius: 4px;
-        margin-bottom: 1rem;
-        border-left: 4px solid #dc3545;
-    }
-    
-    .field-errors {
-        color: #dc3545;
+    .form-group .help-text {
         font-size: 0.85rem;
+        color: #666;
         margin-top: 0.25rem;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .role-admin {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .role-director {
+        background: #fd7e14;
+        color: white;
+    }
+    
+    .role-manager {
+        background: #0d6efd;
+        color: white;
+    }
+    
+    .role-user {
+        background: #6c757d;
+        color: white;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="profile-container">
-    <div class="profile-form">
-        <h2 style="color: #667eea; margin-bottom: 1.5rem; font-size: 1.5rem;">Edit Profile</h2>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
+<div class="detail-section">
+    <h2>Profile Information</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Name</div>
+            <div class="info-value">{{ profile|display_name }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Username</div>
+            <div class="info-value">{{ user.username }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ user.email|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Role</div>
+            <div class="info-value">
+                <span class="role-badge role-{{ profile.role|lower }}">{{ profile.role }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Team</div>
+            <div class="info-value">{{ profile.team.name|default:"No Team" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Cell Phone</div>
+            <div class="info-value">{{ profile.cell_phone|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">External UUID</div>
+            <div class="info-value"><code>{{ profile.external_uuid|default:"—" }}</code></div>
+        </div>
+        {% if user.is_superuser or profile.role == 'Admin' %}
+        <div class="info-item">
+            <div class="info-label">ALMA Internal UUID</div>
+            <div class="info-value"><code>{{ profile.alma_internal_uuid|default:"—" }}</code></div>
+        </div>
         {% endif %}
-        
-        {% if form.non_field_errors %}
-            <div class="form-errors">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
-        
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_first_name">Name (First Name)</label>
-                <input type="text" 
-                       name="first_name" 
-                       id="id_first_name" 
-                       class="form-control" 
-                       value="{% if form.first_name.value %}{{ form.first_name.value }}{% elif user.first_name %}{{ user.first_name }}{% endif %}"
-                       placeholder="Enter your first name">
-                {% if form.first_name.errors %}
-                    <div class="field-errors">{{ form.first_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_last_name">Name (Last Name)</label>
-                <input type="text" 
-                       name="last_name" 
-                       id="id_last_name" 
-                       class="form-control" 
-                       value="{% if form.last_name.value %}{{ form.last_name.value }}{% elif user.last_name %}{{ user.last_name }}{% endif %}"
-                       placeholder="Enter your last name">
-                {% if form.last_name.errors %}
-                    <div class="field-errors">{{ form.last_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_email">Email *</label>
-                <input type="email" 
-                       name="email" 
-                       id="id_email" 
-                       class="form-control" 
-                       value="{{ form.email.value|default:user.email }}"
-                       placeholder="Enter your email address"
-                       required>
-                {% if form.email.errors %}
-                    <div class="field-errors">{{ form.email.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_external_uuid">External UUID</label>
-                <input type="text" 
-                       name="external_uuid" 
-                       id="id_external_uuid" 
-                       class="form-control" 
-                       value="{{ form.external_uuid.value|default:profile.external_uuid|default:'' }}"
-                       placeholder="Enter external UUID">
-                {% if form.external_uuid.errors %}
-                    <div class="field-errors">{{ form.external_uuid.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_cell_phone">Cell Phone</label>
-                <input type="text" 
-                       name="cell_phone" 
-                       id="id_cell_phone" 
-                       class="form-control" 
-                       value="{{ form.cell_phone.value|default:profile.cell_phone|default:'' }}"
-                       placeholder="Enter cell phone number">
-                {% if form.cell_phone.errors %}
-                    <div class="field-errors">{{ form.cell_phone.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div style="margin-top: 2rem;">
-                <button type="submit" class="btn-save">Save Changes</button>
-            </div>
-        </form>
+        <div class="info-item">
+            <div class="info-label">Created At</div>
+            <div class="info-value">{{ profile.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Last Updated</div>
+            <div class="info-value">{{ profile.updated_at|date:"Y-m-d H:i" }}</div>
+        </div>
     </div>
+</div>
+
+<div class="form-section">
+    <h2>Edit Profile</h2>
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+            {{ form.first_name }}
+            {% if form.first_name.help_text %}
+            <div class="help-text">{{ form.first_name.help_text }}</div>
+            {% endif %}
+            {% if form.first_name.errors %}
+            <ul class="errorlist">
+                {% for error in form.first_name.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+            {{ form.last_name }}
+            {% if form.last_name.help_text %}
+            <div class="help-text">{{ form.last_name.help_text }}</div>
+            {% endif %}
+            {% if form.last_name.errors %}
+            <ul class="errorlist">
+                {% for error in form.last_name.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.help_text %}
+            <div class="help-text">{{ form.email.help_text }}</div>
+            {% endif %}
+            {% if form.email.errors %}
+            <ul class="errorlist">
+                {% for error in form.email.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.cell_phone.id_for_label }}">{{ form.cell_phone.label }}</label>
+            {{ form.cell_phone }}
+            {% if form.cell_phone.help_text %}
+            <div class="help-text">{{ form.cell_phone.help_text }}</div>
+            {% endif %}
+            {% if form.cell_phone.errors %}
+            <ul class="errorlist">
+                {% for error in form.cell_phone.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.external_uuid.id_for_label }}">{{ form.external_uuid.label }}</label>
+            {{ form.external_uuid }}
+            {% if form.external_uuid.help_text %}
+            <div class="help-text">{{ form.external_uuid.help_text }}</div>
+            {% endif %}
+            {% if form.external_uuid.errors %}
+            <ul class="errorlist">
+                {% for error in form.external_uuid.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
 </div>
 {% endblock %}
 
