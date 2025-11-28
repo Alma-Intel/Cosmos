@@ -210,7 +210,7 @@
             {% endif %}
         </div>
         
-        {% if can_change_role or current_profile.is_admin %}
+        {% if can_change_role or current_profile.role == 'Admin' %}
         <div class="form-group">
             <label for="{{ form.role.id_for_label }}">{{ form.role.label }}</label>
             {{ form.role }}

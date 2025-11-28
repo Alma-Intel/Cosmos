@@ -206,31 +206,33 @@ def agent_detail(request, user_id):
         )
         if form.is_valid():
             # Update user fields
-            target_user.first_name = form.cleaned_data['first_name']
-            target_user.last_name = form.cleaned_data['last_name']
-            target_user.email = form.cleaned_data['email']
+            target_user.first_name = form.cleaned_data.get('first_name', '')
+            target_user.last_name = form.cleaned_data.get('last_name', '')
+            target_user.email = form.cleaned_data.get('email', '')
             target_user.save()
             
             # Update profile fields
             target_profile.external_uuid = form.cleaned_data.get('external_uuid', '')
             target_profile.cell_phone = form.cleaned_data.get('cell_phone', '')
             
-            # Role and team can only be changed by authorized users
-            if can_change_role and 'role' in form.cleaned_data:
-                new_role = form.cleaned_data['role']
-                # Validate role change
-                if current_profile.is_admin():
-                    # Admins can change to any role
-                    target_profile.role = new_role
-                elif current_profile.is_director() and new_role in ['User', 'Manager']:
-                    # Directors can only change between User and Manager
-                    target_profile.role = new_role
+            # Role update - admins can change any role, directors have restrictions
+            if current_profile.is_admin():
+                # Admins can always change role if it's in the form
+                if 'role' in form.cleaned_data:
+                    target_profile.role = form.cleaned_data['role']
+            elif current_profile.is_director():
+                # Directors can only change between User and Manager
+                if 'role' in form.cleaned_data:
+                    new_role = form.cleaned_data['role']
+                    if new_role in ['User', 'Manager']:
+                        target_profile.role = new_role
             
-            # Team can be changed by managers, directors, and admins
+            # Team update - managers, directors, and admins can change teams
             if (current_profile.is_manager() or current_profile.is_director() or current_profile.is_admin()):
-                # Always update team if user has permission (even if it's None/empty)
-                team_value = form.cleaned_data.get('team')
-                target_profile.team = team_value if team_value else None
+                # Always update team if it's in the form
+                if 'team' in form.cleaned_data:
+                    team_value = form.cleaned_data.get('team')
+                    target_profile.team = team_value if team_value else None
             
             # ALMA UUID can only be set by admins
             if can_view_alma and 'alma_internal_uuid' in form.cleaned_data:
