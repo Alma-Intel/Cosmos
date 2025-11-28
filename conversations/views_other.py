@@ -42,6 +42,7 @@ def agent_create(request):
                     external_uuid=form.cleaned_data.get('external_uuid', ''),
                     cell_phone=form.cleaned_data.get('cell_phone', ''),
                     alma_internal_uuid=form.cleaned_data.get('alma_internal_uuid', '') if current_profile.is_admin() else '',
+                    alma_internal_organization=form.cleaned_data.get('alma_internal_organization', '') if current_profile.is_admin() else '',
                 )
                 
                 # Validate the profile (team requirements, etc.)
@@ -373,9 +374,11 @@ def agent_detail(request, user_id):
                 # Explicitly set team (even if None to clear it)
                 target_profile.team = team_value
             
-            # ALMA UUID can only be set by admins
+            # ALMA UUID and Organization can only be set by admins
             if can_view_alma and 'alma_internal_uuid' in form.cleaned_data:
                 target_profile.alma_internal_uuid = form.cleaned_data['alma_internal_uuid']
+            if can_view_alma and 'alma_internal_organization' in form.cleaned_data:
+                target_profile.alma_internal_organization = form.cleaned_data['alma_internal_organization']
             
             try:
                 # Validate before saving

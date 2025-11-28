@@ -79,6 +79,16 @@ class AgentEditForm(forms.Form):
         }),
         help_text='Only visible to admins'
     )
+    alma_internal_organization = forms.CharField(
+        max_length=255,
+        required=False,
+        label='ALMA Internal Organization',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter ALMA internal organization'
+        }),
+        help_text='Only visible to admins'
+    )
     
     def __init__(self, *args, **kwargs):
         profile_instance = kwargs.pop('profile_instance', None)
@@ -97,12 +107,15 @@ class AgentEditForm(forms.Form):
             self.fields['external_uuid'].initial = profile_instance.external_uuid or ''
             self.fields['cell_phone'].initial = profile_instance.cell_phone or ''
             self.fields['alma_internal_uuid'].initial = profile_instance.alma_internal_uuid or ''
+            self.fields['alma_internal_organization'].initial = profile_instance.alma_internal_organization or ''
+            self.fields['alma_internal_organization'].initial = profile_instance.alma_internal_organization or ''
         
             # Hide fields based on permissions
             if current_profile:
-                # Only admins can see ALMA internal UUID
+                # Only admins can see ALMA internal UUID and Organization
                 if not current_profile.is_admin():
                     self.fields['alma_internal_uuid'].widget = forms.HiddenInput()
+                    self.fields['alma_internal_organization'].widget = forms.HiddenInput()
             
             # Note: Role and team permission checks are handled in the view
             # We show the fields but validate permissions when saving
@@ -201,6 +214,16 @@ class UserCreateForm(forms.Form):
         }),
         help_text='Only visible to admins'
     )
+    alma_internal_organization = forms.CharField(
+        max_length=255,
+        required=False,
+        label='ALMA Internal Organization',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter ALMA internal organization'
+        }),
+        help_text='Only visible to admins'
+    )
     
     def __init__(self, *args, **kwargs):
         current_profile = kwargs.pop('current_profile', None)
@@ -208,9 +231,10 @@ class UserCreateForm(forms.Form):
         
         # Hide fields based on permissions
         if current_profile:
-            # Only admins can see ALMA internal UUID
+            # Only admins can see ALMA internal UUID and Organization
             if not current_profile.is_admin():
                 self.fields['alma_internal_uuid'].widget = forms.HiddenInput()
+                self.fields['alma_internal_organization'].widget = forms.HiddenInput()
             
             # Directors can only create Users and Managers
             if current_profile.is_director() and not current_profile.is_admin():

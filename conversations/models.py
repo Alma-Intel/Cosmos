@@ -64,6 +64,13 @@ class UserProfile(models.Model):
         verbose_name='ALMA Internal UUID',
         help_text='Internal UUID - only visible to admins'
     )
+    alma_internal_organization = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='ALMA Internal Organization',
+        help_text='Internal Organization - only visible to admins'
+    )
     cell_phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Cell Phone')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

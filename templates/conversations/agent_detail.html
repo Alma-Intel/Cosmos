@@ -168,6 +168,10 @@
             <div class="info-label">ALMA Internal UUID</div>
             <div class="info-value"><code>{{ profile.alma_internal_uuid|default:"—" }}</code></div>
         </div>
+        <div class="info-item">
+            <div class="info-label">ALMA Internal Organization</div>
+            <div class="info-value"><code>{{ profile.alma_internal_organization|default:"—" }}</code></div>
+        </div>
         {% endif %}
         <div class="info-item">
             <div class="info-label">Created At</div>
@@ -259,6 +263,13 @@
             {{ form.alma_internal_uuid }}
             {% if form.alma_internal_uuid.help_text %}
             <div class="help-text">{{ form.alma_internal_uuid.help_text }}</div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.alma_internal_organization.id_for_label }}">{{ form.alma_internal_organization.label }}</label>
+            {{ form.alma_internal_organization }}
+            {% if form.alma_internal_organization.help_text %}
+            <div class="help-text">{{ form.alma_internal_organization.help_text }}</div>
             {% endif %}
         </div>
         {% endif %}
