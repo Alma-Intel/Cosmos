@@ -228,11 +228,9 @@ def agent_detail(request, user_id):
             
             # Team can be changed by managers, directors, and admins
             if (current_profile.is_manager() or current_profile.is_director() or current_profile.is_admin()):
-                if 'team' in form.cleaned_data:
-                    if form.cleaned_data['team']:
-                        target_profile.team = form.cleaned_data['team']
-                    else:
-                        target_profile.team = None
+                # Always update team if user has permission (even if it's None/empty)
+                team_value = form.cleaned_data.get('team')
+                target_profile.team = team_value if team_value else None
             
             # ALMA UUID can only be set by admins
             if can_view_alma and 'alma_internal_uuid' in form.cleaned_data:
