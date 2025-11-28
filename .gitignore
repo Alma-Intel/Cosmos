@@ -50,3 +50,6 @@ Thumbs.db
 
 # Railway
 .railway/
+
+# Credentials
+ADMIN_CREDENTIALS.txt

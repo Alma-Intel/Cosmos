@@ -1,2 +1,2 @@
-web: gunicorn crm_project.wsgi --log-file -
+web: gunicorn crm_project.wsgi --bind 0.0.0.0:$PORT --log-file -
 

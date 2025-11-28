@@ -19,7 +19,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-producti
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# Allow Railway domain and any configured hosts
+default_hosts = 'localhost,127.0.0.1,cosmos-prod.up.railway.app'
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=default_hosts, cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -127,4 +129,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # WhiteNoise configuration for static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Authentication settings
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Custom authentication backend for single admin user
+AUTHENTICATION_BACKENDS = [
+    'conversations.authentication.SingleAdminBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep default for admin panel
+]
+
+# Hardcoded admin password hash (username: admin, password: TPVzYdZz2gNggOx-aVNk7w)
+ADMIN_PASSWORD_HASH = config('ADMIN_PASSWORD_HASH', default='2131a8f17431fb7d944a05e6d8c1877437bbe5003fa82810a0c6702e10fab378')
 

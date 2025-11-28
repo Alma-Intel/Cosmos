@@ -4,6 +4,7 @@ Views for the conversations app
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 from .mongodb import (
     get_conversations_collection,
     get_all_sellers,
@@ -12,6 +13,7 @@ from .mongodb import (
 )
 
 
+@login_required
 def conversation_list(request):
     """List all conversations with filtering options"""
     collection = get_conversations_collection()
@@ -89,6 +91,7 @@ def conversation_list(request):
     return render(request, 'conversations/list.html', context)
 
 
+@login_required
 def conversation_detail(request, conversation_id):
     """View detailed information about a specific conversation"""
     collection = get_conversations_collection()
