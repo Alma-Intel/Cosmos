@@ -56,7 +56,7 @@
 <div class="content">
     <h2 style="margin-bottom: 1.5rem; color: #333;">Conversations ({{ page_obj.paginator.count }} total)</h2>
     
-    {% if page_obj %}
+    {% if page_obj and page_obj.object_list %}
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
