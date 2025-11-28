@@ -123,10 +123,11 @@ class AgentEditForm(forms.Form):
         
             # Hide fields based on permissions
             if current_profile:
-                # Only admins can see ALMA internal UUID and Organization
+                # Only admins can see ALMA internal UUID, Organization, and password
                 if not current_profile.is_admin():
                     self.fields['alma_internal_uuid'].widget = forms.HiddenInput()
                     self.fields['alma_internal_organization'].widget = forms.HiddenInput()
+                    self.fields['new_password'].widget = forms.HiddenInput()
             
             # Note: Role and team permission checks are handled in the view
             # We show the fields but validate permissions when saving

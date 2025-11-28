@@ -386,6 +386,11 @@ def agent_detail(request, user_id):
             target_user.first_name = form.cleaned_data.get('first_name', '')
             target_user.last_name = form.cleaned_data.get('last_name', '')
             target_user.email = form.cleaned_data.get('email', '')
+            
+            # Update password if provided (admin-only)
+            if current_profile.is_admin() and form.cleaned_data.get('new_password'):
+                target_user.set_password(form.cleaned_data['new_password'])
+            
             target_user.save()
             
             # Update profile fields
