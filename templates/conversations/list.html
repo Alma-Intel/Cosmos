@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversations - CRM{% endblock %}
+
+{% block content %}
+<div class="filter-section">
+    <form method="get" class="filter-form">
+        <div class="form-group">
+            <label for="seller_id">Seller ID</label>
+            <select name="seller_id" id="seller_id">
+                <option value="">All Sellers</option>
+                {% for seller in all_sellers %}
+                <option value="{{ seller }}" {% if seller == current_seller_id %}selected{% endif %}>
+                    {{ seller }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="sales_stage">Sales Stage</label>
+            <select name="sales_stage" id="sales_stage">
+                <option value="">All Stages</option>
+                {% for stage in all_sales_stages %}
+                <option value="{{ stage }}" {% if stage == current_sales_stage %}selected{% endif %}>
+                    {{ stage }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="tag">Tag</label>
+            <select name="tag" id="tag">
+                <option value="">All Tags</option>
+                {% for tag in all_tags %}
+                <option value="{{ tag }}" {% if tag == current_tag %}selected{% endif %}>
+                    {{ tag }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="search">Search</label>
+            <input type="text" name="search" id="search" placeholder="Name, Email, or Chat ID" value="{{ current_search }}">
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'conversation_list' %}" class="btn btn-secondary" style="margin-top: 0.5rem; display: block; text-align: center; text-decoration: none;">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="content">
+    <h2 style="margin-bottom: 1.5rem; color: #333;">Conversations ({{ page_obj.paginator.count }} total)</h2>
+    
+    {% if page_obj %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Chat ID</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Client Name</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Email</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Messages</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Sellers</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Last Update</th>
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for conv in page_obj %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 1rem;">
+                    <code style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
+                        {{ conv.chatId|truncatechars:20 }}
+                    </code>
+                </td>
+                <td style="padding: 1rem;">{{ conv.metadata.clientName|default:"—" }}</td>
+                <td style="padding: 1rem;">{{ conv.metadata.clientEmail|default:"—" }}</td>
+                <td style="padding: 1rem;">{{ conv.mensagens|length }}</td>
+                <td style="padding: 1rem;">
+                    {% if conv.envolvedSellers %}
+                        {% for seller in conv.envolvedSellers|slice:":2" %}
+                            <span style="background: #e7f3ff; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-right: 0.25rem;">
+                                {{ seller|truncatechars:15 }}
+                            </span>
+                        {% endfor %}
+                        {% if conv.envolvedSellers|length > 2 %}
+                            <span style="color: #666; font-size: 0.85rem;">+{{ conv.envolvedSellers|length|add:"-2" }}</span>
+                        {% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem;">{{ conv.lastUpdate|date:"Y-m-d H:i" }}</td>
+                <td style="padding: 1rem;">
+                    <a href="{% url 'conversation_detail' conv._id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                        View Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">&laquo; First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Previous</a>
+        {% endif %}
+        
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if current_seller_id %}&seller_id={{ current_seller_id }}{% endif %}{% if current_sales_stage %}&sales_stage={{ current_sales_stage }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">Last &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <p style="padding: 2rem; text-align: center; color: #666;">No conversations found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversation Details - CRM{% endblock %}
+
+{% block header_title %}
+    <a href="{% url 'conversation_list' %}" style="color: white; text-decoration: none; margin-right: 1rem;">← Back</a>
+    Conversation Details
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 0.95rem;
+    }
+    
+    .messages-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .message {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .message-sender {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 0.9rem;
+    }
+    
+    .message-timestamp {
+        color: #666;
+        font-size: 0.85rem;
+    }
+    
+    .message-type {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        background: #e7f3ff;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+        color: #667eea;
+    }
+    
+    .message-content {
+        color: #333;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .message-content:empty::before {
+        content: "[Media message]";
+        color: #999;
+        font-style: italic;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: #667eea;
+        color: white;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-section">
+    <h2>Conversation Information</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Chat ID</div>
+            <div class="info-value"><code>{{ conversation.chatId }}</code></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Conversation ID</div>
+            <div class="info-value"><code>{{ conversation._id }}</code></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Last Update</div>
+            <div class="info-value">{{ conversation.lastUpdate|date:"Y-m-d H:i:s" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Total Messages</div>
+            <div class="info-value">{{ messages|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-section">
+    <h2>Client Information</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Name</div>
+            <div class="info-value">{{ metadata.clientName|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ metadata.clientEmail|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Phone</div>
+            <div class="info-value">{{ metadata.clientCellNumber|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">CPF</div>
+            <div class="info-value">{{ metadata.clientCPF|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Birth Date</div>
+            <div class="info-value">{{ metadata.clientBirthDate|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Gender</div>
+            <div class="info-value">{{ metadata.clientGender|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">City</div>
+            <div class="info-value">{{ metadata.clientCity|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">State</div>
+            <div class="info-value">{{ metadata.clientState|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Country</div>
+            <div class="info-value">{{ metadata.clientCountry|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Sales Stage</div>
+            <div class="info-value">{{ metadata.salesStage|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Course</div>
+            <div class="info-value">{{ metadata.clientCurso|default:"—" }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Sold</div>
+            <div class="info-value">{{ metadata.clientSold|default:"—" }}</div>
+        </div>
+    </div>
+    {% if metadata.clientTagsInput %}
+    <div style="margin-top: 1rem;">
+        <div class="info-label">Tags</div>
+        <div>
+            {% for tag in metadata.clientTagsInput %}
+                <span class="badge">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% if metadata.clientNotes %}
+    <div style="margin-top: 1rem;">
+        <div class="info-label">Notes</div>
+        <div class="info-value" style="white-space: pre-wrap;">{{ metadata.clientNotes }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="detail-section">
+    <h2>Involved Sellers</h2>
+    <div>
+        {% for seller in envolved_sellers %}
+            <span class="badge">{{ seller }}</span>
+        {% empty %}
+            <span style="color: #666;">No sellers assigned</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="detail-section">
+    <h2>Chat History ({{ messages|length }} messages)</h2>
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="message">
+            <div class="message-header">
+                <div>
+                    <span class="message-sender">{{ message.messageSender|truncatechars:30 }}</span>
+                    <span class="message-type">{{ message.messageType }}</span>
+                    {% if message.messageFormat %}
+                    <span class="message-type">{{ message.messageFormat }}</span>
+                    {% endif %}
+                </div>
+                <div class="message-timestamp">
+                    {{ message.messageTimestamp|date:"Y-m-d H:i:s" }}
+                </div>
+            </div>
+            <div class="message-content">
+                {% if message.messageContent %}
+                    {{ message.messageContent }}
+                {% elif message.messageContent_en %}
+                    {{ message.messageContent_en }}
+                {% endif %}
+            </div>
+            {% if message.link %}
+            <div style="margin-top: 0.5rem;">
+                <a href="{{ message.link }}" target="_blank" style="color: #667eea; font-size: 0.85rem;">View Link</a>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #666; padding: 2rem;">No messages found in this conversation.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
