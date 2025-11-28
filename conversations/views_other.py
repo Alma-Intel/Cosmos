@@ -301,11 +301,27 @@ def team_detail(request, team_id):
             return redirect('teams_list')
     
     # Get available managers for change manager dropdown
-    available_managers = UserProfile.objects.filter(
+    # Always filter by team's organization (even for admins)
+    available_managers_query = UserProfile.objects.filter(
         role__in=['Manager', 'Director', 'Admin']
     ).exclude(
         team=team
-    ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+    )
+    
+    # Filter by team's organization - applies to everyone including admins
+    if team.alma_internal_organization:
+        available_managers_query = available_managers_query.filter(
+            alma_internal_organization=team.alma_internal_organization
+        )
+    else:
+        # If team has no organization, only show managers with no organization
+        available_managers_query = available_managers_query.filter(
+            alma_internal_organization__isnull=True
+        ) | available_managers_query.filter(
+            alma_internal_organization=''
+        )
+    
+    available_managers = available_managers_query.select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
     
     # Check if user can view ALMA fields (admin only)
     from .permissions import can_view_alma_uuid
