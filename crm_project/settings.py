@@ -23,6 +23,13 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 default_hosts = 'localhost,127.0.0.1,cosmos-prod.up.railway.app'
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=default_hosts, cast=lambda v: [s.strip() for s in v.split(',')])
 
+# CSRF trusted origins for Railway
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://cosmos-prod.up.railway.app',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
 
 # Application definition
 
