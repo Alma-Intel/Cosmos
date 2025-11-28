@@ -5,6 +5,9 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConfigurationError
 from django.conf import settings
 
+# Cache for UUID to email mapping (loaded once at startup)
+_UUID_TO_EMAIL_CACHE = None
+
 
 def get_mongodb_client():
     """Get MongoDB client connection"""
@@ -107,7 +110,14 @@ def get_all_sales_stages():
 
 
 def get_uuid_to_email_mapping():
-    """Get the uuidToEmail mapping from dicts database"""
+    """Get the uuidToEmail mapping from dicts database (cached)"""
+    global _UUID_TO_EMAIL_CACHE
+    
+    # Return cached version if available
+    if _UUID_TO_EMAIL_CACHE is not None:
+        return _UUID_TO_EMAIL_CACHE
+    
+    # Load mapping from MongoDB
     try:
         client = get_mongodb_client()
         db = client['dicts']
@@ -119,13 +129,7 @@ def get_uuid_to_email_mapping():
             doc = collection.find_one({'name': 'uuidToEmail'})
         
         if settings.DEBUG:
-            print(f"uuidToEmail document found: {doc is not None}")
-            if doc:
-                print(f"Document keys: {list(doc.keys())}")
-                # Print first few entries to see structure
-                for key in list(doc.keys())[:5]:
-                    if key not in ['_id', 'name']:
-                        print(f"  {key}: {type(doc[key])}")
+            print(f"Loading uuidToEmail mapping... Document found: {doc is not None}")
         
         if doc:
             # The mapping could be in 'dict' field or directly in the document
@@ -141,11 +145,13 @@ def get_uuid_to_email_mapping():
             
             if isinstance(mapping, dict):
                 if settings.DEBUG:
-                    print(f"Mapping contains {len(mapping)} entries")
+                    print(f"UUID to email mapping loaded: {len(mapping)} entries")
                     # Show a sample mapping
                     if mapping:
                         sample_key = list(mapping.keys())[0]
-                        print(f"Sample mapping: {sample_key} -> {mapping[sample_key]}")
+                        print(f"Sample: {sample_key} -> {mapping[sample_key]}")
+                # Cache the mapping
+                _UUID_TO_EMAIL_CACHE = mapping
                 return mapping
             elif isinstance(mapping, list):
                 # If it's a list, convert to dict (assuming list of {uuid: email} objects)
@@ -161,17 +167,22 @@ def get_uuid_to_email_mapping():
                             result.update(item)
                 if settings.DEBUG:
                     print(f"Converted list to dict with {len(result)} entries")
+                # Cache the mapping
+                _UUID_TO_EMAIL_CACHE = result
                 return result
         
         if settings.DEBUG:
             print("No uuidToEmail mapping found or invalid format")
+        # Cache empty dict to avoid repeated queries
+        _UUID_TO_EMAIL_CACHE = {}
         return {}
     except Exception as e:
-        # If there's an error, return empty dict
+        # If there's an error, cache empty dict and return it
         import traceback
         if settings.DEBUG:
             print(f"Error getting uuidToEmail mapping: {e}")
             print(traceback.format_exc())
+        _UUID_TO_EMAIL_CACHE = {}
         return {}
 
 
