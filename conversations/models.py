@@ -14,7 +14,6 @@ class UserProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = 'userprofile'
         verbose_name = 'User Profile'
         verbose_name_plural = 'User Profiles'
     
