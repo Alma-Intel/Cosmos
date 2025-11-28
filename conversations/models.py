@@ -82,14 +82,14 @@ class UserProfile(models.Model):
         if self.team:
             # Check if team will have a Manager or Director after this save
             # (excluding current user if updating)
-            other_managers = self.team.userprofile_set.exclude(
+            other_managers = self.team.members.exclude(
                 pk=self.pk if self.pk else None
-            ).filter(role__in=['Manager', 'Director'])
+            ).filter(role__in=['Manager', 'Director', 'Admin'])
             
-            # If this user is not a Manager/Director and there are no others, raise error
-            if self.role not in ['Manager', 'Director'] and not other_managers.exists():
+            # If this user is not a Manager/Director/Admin and there are no others, raise error
+            if self.role not in ['Manager', 'Director', 'Admin'] and not other_managers.exists():
                 raise ValidationError({
-                    'team': 'Team must have at least one Manager or Director. Either assign a Manager/Director to this team or change this user\'s role to Manager or Director.'
+                    'team': 'Team must have at least one Manager, Director, or Admin. Either assign a Manager/Director/Admin to this team or change this user\'s role to Manager, Director, or Admin.'
                 })
     
     def get_display_name(self):

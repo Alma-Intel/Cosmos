@@ -4,7 +4,7 @@ Views for other sections: Agentes, Clientes, Bots, Workspace
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.models import User
 from .models import UserProfile, Team
 from .forms import ProfileForm, AgentEditForm, UserCreateForm, TeamCreateForm
@@ -363,10 +363,22 @@ def agent_detail(request, user_id):
                 target_profile.alma_internal_uuid = form.cleaned_data['alma_internal_uuid']
             
             try:
+                # Validate before saving
                 target_profile.full_clean()
+                # Save the profile
                 target_profile.save()
                 messages.success(request, f'Agent {target_profile.get_display_name()} updated successfully!')
                 return redirect('agent_detail', user_id=user_id)
+            except ValidationError as e:
+                # Handle validation errors specifically
+                error_messages = []
+                if hasattr(e, 'error_dict'):
+                    for field, errors in e.error_dict.items():
+                        for error in errors:
+                            error_messages.append(f"{field}: {error.message}")
+                else:
+                    error_messages.append(str(e))
+                messages.error(request, f'Validation error: {"; ".join(error_messages)}')
             except Exception as e:
                 messages.error(request, f'Error updating agent: {str(e)}')
     else:
