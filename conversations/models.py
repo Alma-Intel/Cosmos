@@ -26,7 +26,6 @@ class Team(models.Model):
         verbose_name = 'Team'
         verbose_name_plural = 'Teams'
         ordering = ['name']
-        default_auto_field = 'django.db.models.UUIDField'
     
     def __str__(self):
         return self.name
@@ -90,7 +89,6 @@ class UserProfile(models.Model):
         verbose_name = 'User Profile'
         verbose_name_plural = 'User Profiles'
         ordering = ['user__last_name', 'user__first_name', 'user__username']
-        default_auto_field = 'django.db.models.UUIDField'
     
     def __str__(self):
         return f"{self.user.username}'s Profile"
