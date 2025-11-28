@@ -35,6 +35,14 @@ def agent_create(request):
                 )
                 
                 # Create the user profile
+                # Inherit alma_internal_organization from creator, or use form value if admin explicitly set it
+                if current_profile.is_admin() and form.cleaned_data.get('alma_internal_organization'):
+                    # Admin explicitly set a value, use it
+                    inherited_org = form.cleaned_data.get('alma_internal_organization', '')
+                else:
+                    # Inherit from creator
+                    inherited_org = current_profile.alma_internal_organization or ''
+                
                 profile = UserProfile.objects.create(
                     user=user,
                     role=form.cleaned_data['role'],
@@ -42,7 +50,7 @@ def agent_create(request):
                     external_uuid=form.cleaned_data.get('external_uuid', ''),
                     cell_phone=form.cleaned_data.get('cell_phone', ''),
                     alma_internal_uuid=form.cleaned_data.get('alma_internal_uuid', '') if current_profile.is_admin() else '',
-                    alma_internal_organization=form.cleaned_data.get('alma_internal_organization', '') if current_profile.is_admin() else '',
+                    alma_internal_organization=inherited_org,
                 )
                 
                 # Validate the profile (team requirements, etc.)
@@ -82,7 +90,10 @@ def team_create(request):
         form = TeamCreateForm(request.POST)
         if form.is_valid():
             try:
-                team = form.save()
+                team = form.save(commit=False)
+                # Inherit alma_internal_organization from creator
+                team.alma_internal_organization = current_profile.alma_internal_organization or ''
+                team.save()
                 # Assign the selected manager to the team
                 manager_profile = form.cleaned_data['manager']
                 manager_profile.team = team

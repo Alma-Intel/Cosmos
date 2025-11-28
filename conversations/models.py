@@ -10,6 +10,13 @@ class Team(models.Model):
     """Team model - each team must have a Manager or Director"""
     name = models.CharField(max_length=255, unique=True, verbose_name='Team Name')
     description = models.TextField(blank=True, null=True, verbose_name='Description')
+    alma_internal_organization = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='ALMA Internal Organization',
+        help_text='Internal Organization - only visible to admins'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
