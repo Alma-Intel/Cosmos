@@ -139,7 +139,7 @@ class UserCreateForm(forms.Form):
         })
     )
     email = forms.EmailField(
-        required=True,
+        required=False,
         label='Email',
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
@@ -227,7 +227,7 @@ class UserCreateForm(forms.Form):
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
+        if email and User.objects.filter(email=email).exists():
             raise forms.ValidationError('A user with this email already exists.')
         return email
 

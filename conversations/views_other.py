@@ -28,7 +28,7 @@ def agent_create(request):
                 # Create the user
                 user = User.objects.create_user(
                     username=form.cleaned_data['username'],
-                    email=form.cleaned_data['email'],
+                    email=form.cleaned_data.get('email', ''),
                     password=form.cleaned_data['password'],
                     first_name=form.cleaned_data.get('first_name', ''),
                     last_name=form.cleaned_data.get('last_name', ''),
