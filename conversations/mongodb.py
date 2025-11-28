@@ -7,7 +7,7 @@ from django.conf import settings
 
 def get_mongodb_client():
     """Get MongoDB client connection"""
-    return MongoClient(settings.MONGODB_URI)
+    return MongoClient(settings.MONGODB_URL)
 
 
 def get_conversations_collection():

@@ -77,7 +77,7 @@ DATABASES = {
 }
 
 # MongoDB Configuration
-MONGODB_URI = config('MONGODB_URI', default='mongodb://localhost:27017/')
+MONGODB_URL = config('MONGODB_URL', default='mongodb://localhost:27017/')
 MONGODB_DB_NAME = config('MONGODB_DB_NAME', default='crm_db')
 MONGODB_COLLECTION_NAME = config('MONGODB_COLLECTION_NAME', default='conversations')
 
