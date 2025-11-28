@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}ALMA COSMOS - Profile{% endblock %}
+
+{% block header_title %}ALMA COSMOS - Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .profile-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-save {
+        background: #667eea;
+        color: white;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .btn-save:hover {
+        background: #5568d3;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .form-errors {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .field-errors {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-form">
+        <h2 style="color: #667eea; margin-bottom: 1.5rem; font-size: 1.5rem;">Edit Profile</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_first_name">Name (First Name)</label>
+                <input type="text" 
+                       name="first_name" 
+                       id="id_first_name" 
+                       class="form-control" 
+                       value="{% if form.first_name.value %}{{ form.first_name.value }}{% elif user.first_name %}{{ user.first_name }}{% endif %}"
+                       placeholder="Enter your first name">
+                {% if form.first_name.errors %}
+                    <div class="field-errors">{{ form.first_name.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_last_name">Name (Last Name)</label>
+                <input type="text" 
+                       name="last_name" 
+                       id="id_last_name" 
+                       class="form-control" 
+                       value="{% if form.last_name.value %}{{ form.last_name.value }}{% elif user.last_name %}{{ user.last_name }}{% endif %}"
+                       placeholder="Enter your last name">
+                {% if form.last_name.errors %}
+                    <div class="field-errors">{{ form.last_name.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_email">Email *</label>
+                <input type="email" 
+                       name="email" 
+                       id="id_email" 
+                       class="form-control" 
+                       value="{{ form.email.value|default:user.email }}"
+                       placeholder="Enter your email address"
+                       required>
+                {% if form.email.errors %}
+                    <div class="field-errors">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_external_uuid">External UUID</label>
+                <input type="text" 
+                       name="external_uuid" 
+                       id="id_external_uuid" 
+                       class="form-control" 
+                       value="{{ form.external_uuid.value|default:profile.external_uuid|default:'' }}"
+                       placeholder="Enter external UUID">
+                {% if form.external_uuid.errors %}
+                    <div class="field-errors">{{ form.external_uuid.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_cell_phone">Cell Phone</label>
+                <input type="text" 
+                       name="cell_phone" 
+                       id="id_cell_phone" 
+                       class="form-control" 
+                       value="{{ form.cell_phone.value|default:profile.cell_phone|default:'' }}"
+                       placeholder="Enter cell phone number">
+                {% if form.cell_phone.errors %}
+                    <div class="field-errors">{{ form.cell_phone.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn-save">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

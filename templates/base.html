@@ -262,6 +262,9 @@
                 <li class="nav-tab {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
                     <a href="{% url 'analytics' %}">Analytics</a>
                 </li>
+                <li class="nav-tab {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                    <a href="{% url 'profile' %}">Profile</a>
+                </li>
             </ul>
         </div>
     </nav>
