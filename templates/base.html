@@ -259,6 +259,9 @@
                 <li class="nav-tab {% if request.resolver_match.url_name == 'bots_list' %}active{% endif %}">
                     <a href="{% url 'bots_list' %}">Bots</a>
                 </li>
+                <li class="nav-tab {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+                    <a href="{% url 'analytics' %}">Analytics</a>
+                </li>
             </ul>
         </div>
     </nav>

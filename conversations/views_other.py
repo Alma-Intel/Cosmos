@@ -40,3 +40,12 @@ def workspace(request):
     }
     return render(request, 'conversations/placeholder.html', context)
 
+
+@login_required
+def analytics(request):
+    """Analytics view"""
+    context = {
+        'title': 'Analytics',
+    }
+    return render(request, 'conversations/placeholder.html', context)
+
