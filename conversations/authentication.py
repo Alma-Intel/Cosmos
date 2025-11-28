@@ -43,6 +43,22 @@ class SingleAdminBackend(BaseBackend):
                     # Set a random password in the database (won't be used, but good practice)
                     user.set_unusable_password()
                     user.save()
+                
+                # Ensure admin user has Admin role in UserProfile
+                try:
+                    from .models import UserProfile
+                    profile, profile_created = UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={'role': 'Admin'}
+                    )
+                    # Update role if it's not already Admin (for existing users)
+                    if not profile_created and profile.role != 'Admin':
+                        profile.role = 'Admin'
+                        profile.save()
+                except Exception:
+                    # UserProfile model might not exist yet - migrations need to run first
+                    pass
+                
                 return user
             except Exception:
                 # Database tables might not exist yet - migrations need to run first

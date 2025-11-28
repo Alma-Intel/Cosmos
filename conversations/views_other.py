@@ -7,8 +7,64 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User
 from .models import UserProfile, Team
-from .forms import ProfileForm, AgentEditForm
+from .forms import ProfileForm, AgentEditForm, UserCreateForm
 from .permissions import get_user_team_members, can_view_alma_uuid
+
+
+@login_required
+def agent_create(request):
+    """Create a new user/agent"""
+    # Get current user's profile
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Check permissions - only admins and directors can create users
+    if not (current_profile.is_admin() or current_profile.is_director()):
+        raise PermissionDenied("You don't have permission to create users.")
+    
+    if request.method == 'POST':
+        form = UserCreateForm(request.POST, current_profile=current_profile)
+        if form.is_valid():
+            try:
+                # Create the user
+                user = User.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    email=form.cleaned_data['email'],
+                    password=form.cleaned_data['password'],
+                    first_name=form.cleaned_data.get('first_name', ''),
+                    last_name=form.cleaned_data.get('last_name', ''),
+                )
+                
+                # Create the user profile
+                profile = UserProfile.objects.create(
+                    user=user,
+                    role=form.cleaned_data['role'],
+                    team=form.cleaned_data.get('team'),
+                    external_uuid=form.cleaned_data.get('external_uuid', ''),
+                    cell_phone=form.cleaned_data.get('cell_phone', ''),
+                    alma_internal_uuid=form.cleaned_data.get('alma_internal_uuid', '') if current_profile.is_admin() else '',
+                )
+                
+                # Validate the profile (team requirements, etc.)
+                try:
+                    profile.full_clean()
+                    profile.save()
+                    messages.success(request, f'User {user.username} created successfully!')
+                    return redirect('agent_detail', user_id=user.id)
+                except Exception as e:
+                    # If validation fails, delete the user and show error
+                    user.delete()
+                    messages.error(request, f'Error creating user: {str(e)}')
+            except Exception as e:
+                messages.error(request, f'Error creating user: {str(e)}')
+    else:
+        form = UserCreateForm(current_profile=current_profile)
+    
+    context = {
+        'title': 'Create New User',
+        'form': form,
+        'current_profile': current_profile,
+    }
+    return render(request, 'conversations/agent_create.html', context)
 
 
 @login_required
@@ -133,9 +189,11 @@ def agent_detail(request, user_id):
             if can_change_role and 'role' in form.cleaned_data:
                 new_role = form.cleaned_data['role']
                 # Validate role change
-                if current_profile.is_director() and new_role in ['User', 'Manager']:
+                if current_profile.is_admin():
+                    # Admins can change to any role
                     target_profile.role = new_role
-                elif current_profile.is_admin():
+                elif current_profile.is_director() and new_role in ['User', 'Manager']:
+                    # Directors can only change between User and Manager
                     target_profile.role = new_role
             
             # Team can be changed by managers, directors, and admins

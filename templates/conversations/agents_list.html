@@ -45,7 +45,14 @@
 </div>
 
 <div class="content">
-    <h2 style="margin-bottom: 1.5rem; color: #333;">Agents ({{ profiles|length }} total)</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0; color: #333;">Agents ({{ profiles|length }} total)</h2>
+        {% if current_profile.role == 'Admin' or current_profile.role == 'Director' %}
+        <a href="{% url 'agent_create' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+            + Create New User
+        </a>
+        {% endif %}
+    </div>
     
     {% if profiles %}
     <table style="width: 100%; border-collapse: collapse;">
@@ -57,6 +64,9 @@
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Role</th>
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Team</th>
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Phone</th>
+                {% if can_view_alma_uuid %}
+                <th style="padding: 1rem; text-align: left; font-weight: 600;">ALMA UUID</th>
+                {% endif %}
                 <th style="padding: 1rem; text-align: left; font-weight: 600;">Actions</th>
             </tr>
         </thead>
@@ -73,6 +83,13 @@
                 </td>
                 <td style="padding: 1rem;">{{ profile.team.name|default:"—" }}</td>
                 <td style="padding: 1rem;">{{ profile.cell_phone|default:"—" }}</td>
+                {% if can_view_alma_uuid %}
+                <td style="padding: 1rem;">
+                    <code style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem;">
+                        {{ profile.alma_internal_uuid|default:"—"|truncatechars:20 }}
+                    </code>
+                </td>
+                {% endif %}
                 <td style="padding: 1rem;">
                     <a href="{% url 'agent_detail' profile.user.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                         View Details

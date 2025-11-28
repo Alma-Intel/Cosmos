@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}ALMA COSMOS - Create New User{% endblock %}
+
+{% block header_title %}
+    <a href="{% url 'agentes_list' %}" style="color: white; text-decoration: none; margin-right: 1rem;">← Back</a>
+    ALMA COSMOS - Create New User
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h2 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+    
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95rem;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-group .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+    
+    .form-group .errorlist {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        list-style: none;
+        padding: 0;
+    }
+    
+    .form-group .errorlist li {
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-section">
+    <h2>Create New User</h2>
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.help_text %}
+            <div class="help-text">{{ form.username.help_text }}</div>
+            {% endif %}
+            {% if form.username.errors %}
+            <ul class="errorlist">
+                {% for error in form.username.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+            {{ form.password }}
+            {% if form.password.help_text %}
+            <div class="help-text">{{ form.password.help_text }}</div>
+            {% endif %}
+            {% if form.password.errors %}
+            <ul class="errorlist">
+                {% for error in form.password.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+            {{ form.first_name }}
+            {% if form.first_name.help_text %}
+            <div class="help-text">{{ form.first_name.help_text }}</div>
+            {% endif %}
+            {% if form.first_name.errors %}
+            <ul class="errorlist">
+                {% for error in form.first_name.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+            {{ form.last_name }}
+            {% if form.last_name.help_text %}
+            <div class="help-text">{{ form.last_name.help_text }}</div>
+            {% endif %}
+            {% if form.last_name.errors %}
+            <ul class="errorlist">
+                {% for error in form.last_name.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.help_text %}
+            <div class="help-text">{{ form.email.help_text }}</div>
+            {% endif %}
+            {% if form.email.errors %}
+            <ul class="errorlist">
+                {% for error in form.email.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.role.id_for_label }}">{{ form.role.label }}</label>
+            {{ form.role }}
+            {% if form.role.help_text %}
+            <div class="help-text">{{ form.role.help_text }}</div>
+            {% endif %}
+            {% if current_profile.is_director and not current_profile.is_admin %}
+            <div class="help-text">Directors can only create Users and Managers</div>
+            {% endif %}
+            {% if form.role.errors %}
+            <ul class="errorlist">
+                {% for error in form.role.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.team.id_for_label }}">{{ form.team.label }}</label>
+            {{ form.team }}
+            {% if form.team.help_text %}
+            <div class="help-text">{{ form.team.help_text }}</div>
+            {% endif %}
+            {% if form.team.errors %}
+            <ul class="errorlist">
+                {% for error in form.team.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.cell_phone.id_for_label }}">{{ form.cell_phone.label }}</label>
+            {{ form.cell_phone }}
+            {% if form.cell_phone.help_text %}
+            <div class="help-text">{{ form.cell_phone.help_text }}</div>
+            {% endif %}
+            {% if form.cell_phone.errors %}
+            <ul class="errorlist">
+                {% for error in form.cell_phone.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.external_uuid.id_for_label }}">{{ form.external_uuid.label }}</label>
+            {{ form.external_uuid }}
+            {% if form.external_uuid.help_text %}
+            <div class="help-text">{{ form.external_uuid.help_text }}</div>
+            {% endif %}
+            {% if form.external_uuid.errors %}
+            <ul class="errorlist">
+                {% for error in form.external_uuid.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        {% if current_profile.is_admin %}
+        <div class="form-group">
+            <label for="{{ form.alma_internal_uuid.id_for_label }}">{{ form.alma_internal_uuid.label }}</label>
+            {{ form.alma_internal_uuid }}
+            {% if form.alma_internal_uuid.help_text %}
+            <div class="help-text">{{ form.alma_internal_uuid.help_text }}</div>
+            {% endif %}
+            {% if form.alma_internal_uuid.errors %}
+            <ul class="errorlist">
+                {% for error in form.alma_internal_uuid.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <button type="submit" class="btn btn-primary">Create User</button>
+        <a href="{% url 'agentes_list' %}" class="btn btn-secondary" style="text-decoration: none; display: inline-block; margin-left: 0.5rem;">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+
