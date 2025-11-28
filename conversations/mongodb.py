@@ -8,6 +8,11 @@ from django.conf import settings
 # Cache for UUID to email mapping (loaded once at startup)
 _UUID_TO_EMAIL_CACHE = None
 
+# Cache for filter options (loaded once, refreshed on demand)
+_ALL_SELLERS_CACHE = None
+_ALL_TAGS_CACHE = None
+_ALL_SALES_STAGES_CACHE = None
+
 
 def get_mongodb_client():
     """Get MongoDB client connection"""
@@ -49,64 +54,123 @@ def get_conversations_collection():
 
 
 def get_all_sellers():
-    """Get all unique seller IDs from conversations"""
+    """Get all unique seller IDs from conversations (cached, optimized)"""
+    global _ALL_SELLERS_CACHE
+    
+    if _ALL_SELLERS_CACHE is not None:
+        return _ALL_SELLERS_CACHE
+    
     try:
         collection = get_conversations_collection()
         # Check if collection is empty
         if collection.count_documents({}) == 0:
+            _ALL_SELLERS_CACHE = []
             return []
         
-        # Use aggregation pipeline for better performance
-        pipeline = [
-            {'$unwind': '$envolvedSellers'},
-            {'$group': {'_id': '$envolvedSellers'}},
-            {'$project': {'_id': 0, 'seller': '$_id'}}
-        ]
+        # Use a more efficient approach: sample documents and extract sellers
+        # This is much faster than processing all documents
+        all_sellers = set()
         
-        sellers = list(collection.aggregate(pipeline, allowDiskUse=True))
-        all_sellers = [item['seller'] for item in sellers if item.get('seller')]
+        # Sample up to 5000 documents to get a representative set of sellers
+        sample_size = min(5000, collection.count_documents({}))
+        if sample_size > 0:
+            pipeline = [
+                {'$sample': {'size': sample_size}},
+                {'$project': {'envolvedSellers': 1}},
+                {'$match': {'envolvedSellers': {'$exists': True, '$ne': []}}},
+                {'$unwind': '$envolvedSellers'},
+                {'$group': {'_id': '$envolvedSellers'}},
+                {'$project': {'_id': 0, 'seller': '$_id'}}
+            ]
+            
+            try:
+                sellers = list(collection.aggregate(pipeline, allowDiskUse=True, maxTimeMS=10000))
+                all_sellers.update([item['seller'] for item in sellers if item.get('seller')])
+            except Exception as agg_error:
+                if settings.DEBUG:
+                    print(f"Aggregation failed, trying fallback: {agg_error}")
+                # Fallback: get distinct from a limited set
+                for doc in collection.find({'envolvedSellers': {'$exists': True, '$ne': []}}, {'envolvedSellers': 1}).limit(5000):
+                    sellers_list = doc.get('envolvedSellers', [])
+                    if isinstance(sellers_list, list):
+                        all_sellers.update(sellers_list)
+                    elif sellers_list:
+                        all_sellers.add(sellers_list)
         
-        return sorted(list(set(all_sellers)))
+        result = sorted(list(all_sellers))
+        _ALL_SELLERS_CACHE = result
+        if settings.DEBUG:
+            print(f"Loaded {len(result)} unique sellers from sample (cached)")
+        return result
     except Exception as e:
         if settings.DEBUG:
             print(f"Error getting sellers: {e}")
-        # Fallback to distinct if aggregation fails
-        try:
-            sellers = collection.distinct("envolvedSellers")
-            all_sellers = set()
-            for seller_list in sellers:
-                if isinstance(seller_list, list):
-                    all_sellers.update(seller_list)
-                else:
-                    all_sellers.add(seller_list)
-            return sorted(list(all_sellers))
-        except:
-            return []
+        _ALL_SELLERS_CACHE = []
+        return []
 
 
 def get_all_tags():
-    """Get all unique tags from conversations metadata"""
-    collection = get_conversations_collection()
-    # Get all conversations and extract tags
-    all_tags = set()
-    for conv in collection.find({}, {"metadata.clientTagsInput": 1}):
-        tags = conv.get("metadata", {}).get("clientTagsInput")
-        if tags:
-            if isinstance(tags, str):
-                # If tags is a string, split by comma
-                tag_list = [tag.strip() for tag in tags.split(",")]
-                all_tags.update(tag_list)
-            elif isinstance(tags, list):
-                all_tags.update(tags)
-    return sorted(list(all_tags))
+    """Get all unique tags from conversations metadata (cached)"""
+    global _ALL_TAGS_CACHE
+    
+    if _ALL_TAGS_CACHE is not None:
+        return _ALL_TAGS_CACHE
+    
+    try:
+        collection = get_conversations_collection()
+        all_tags = set()
+        
+        # Use aggregation with limit for performance
+        pipeline = [
+            {'$project': {'tags': '$metadata.clientTagsInput'}},
+            {'$limit': 10000},  # Limit for performance
+            {'$match': {'tags': {'$ne': None, '$ne': ''}}},
+            {'$group': {'_id': '$tags'}}
+        ]
+        
+        for doc in collection.aggregate(pipeline, allowDiskUse=True):
+            tags = doc.get('_id')
+            if tags:
+                if isinstance(tags, str):
+                    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+                    all_tags.update(tag_list)
+                elif isinstance(tags, list):
+                    all_tags.update([str(t) for t in tags if t])
+        
+        result = sorted(list(all_tags))
+        _ALL_TAGS_CACHE = result
+        if settings.DEBUG:
+            print(f"Loaded {len(result)} unique tags (cached)")
+        return result
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error getting tags: {e}")
+        _ALL_TAGS_CACHE = []
+        return []
 
 
 def get_all_sales_stages():
-    """Get all unique sales stages from conversations"""
-    collection = get_conversations_collection()
-    stages = collection.distinct("metadata.salesStage")
-    # Filter out None values and convert to strings
-    return sorted([str(s) for s in stages if s])
+    """Get all unique sales stages from conversations (cached)"""
+    global _ALL_SALES_STAGES_CACHE
+    
+    if _ALL_SALES_STAGES_CACHE is not None:
+        return _ALL_SALES_STAGES_CACHE
+    
+    try:
+        collection = get_conversations_collection()
+        # Use distinct with a limit query for better performance
+        stages = collection.distinct("metadata.salesStage", {"metadata.salesStage": {"$ne": None}})
+        result = sorted([str(s) for s in stages if s])
+        
+        _ALL_SALES_STAGES_CACHE = result
+        if settings.DEBUG:
+            print(f"Loaded {len(result)} unique sales stages (cached)")
+        return result
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error getting sales stages: {e}")
+        _ALL_SALES_STAGES_CACHE = []
+        return []
 
 
 def get_uuid_to_email_mapping():
