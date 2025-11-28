@@ -141,6 +141,42 @@
         }
     </style>
     {% block extra_css %}{% endblock %}
+    <script>
+        // Convert UTC timestamps to user's local timezone
+        document.addEventListener('DOMContentLoaded', function() {
+            const lastUpdateElements = document.querySelectorAll('.last-update[data-utc-time]');
+            lastUpdateElements.forEach(function(element) {
+                const utcTime = element.getAttribute('data-utc-time');
+                if (utcTime) {
+                    try {
+                        // Parse the UTC time string (ISO format)
+                        const utcDate = new Date(utcTime);
+                        if (!isNaN(utcDate.getTime())) {
+                            // Format to user's local timezone
+                            const year = utcDate.getFullYear();
+                            const month = String(utcDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(utcDate.getDate()).padStart(2, '0');
+                            const hours = String(utcDate.getHours()).padStart(2, '0');
+                            const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+                            const seconds = String(utcDate.getSeconds()).padStart(2, '0');
+                            
+                            // Check if seconds are needed (based on original format)
+                            const originalText = element.textContent.trim();
+                            const hasSeconds = originalText.includes(':') && originalText.split(':').length > 2;
+                            
+                            if (hasSeconds) {
+                                element.textContent = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+                            } else {
+                                element.textContent = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error converting timezone:', e);
+                    }
+                }
+            });
+        });
+    </script>
 </head>
 <body>
     <div class="header">

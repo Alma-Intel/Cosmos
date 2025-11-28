@@ -94,7 +94,9 @@
                         —
                     {% endif %}
                 </td>
-                <td style="padding: 1rem;">{{ conv.lastUpdate|date:"Y-m-d H:i" }}</td>
+                <td style="padding: 1rem;">
+                    <span class="last-update" data-utc-time="{{ conv.lastUpdate|date:'c' }}">{{ conv.lastUpdate|date:"Y-m-d H:i" }}</span>
+                </td>
                 <td style="padding: 1rem;">
                     <a href="{% url 'conversation_detail' conv.id %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                         View Details

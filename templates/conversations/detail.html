@@ -137,7 +137,9 @@
         </div>
         <div class="info-item">
             <div class="info-label">Last Update</div>
-            <div class="info-value">{{ conversation.lastUpdate|date:"Y-m-d H:i:s" }}</div>
+            <div class="info-value">
+                <span class="last-update" data-utc-time="{{ conversation.lastUpdate|date:'c' }}">{{ conversation.lastUpdate|date:"Y-m-d H:i:s" }}</span>
+            </div>
         </div>
         <div class="info-item">
             <div class="info-label">Total Messages</div>

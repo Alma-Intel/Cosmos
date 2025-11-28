@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.utils import timezone
 from datetime import datetime
 from .mongodb import (
     get_conversations_collection,
@@ -100,24 +101,31 @@ def conversation_list(request):
     for conv in conversations:
         conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
         
-        # Parse lastUpdate string to datetime object if it exists
+        # Parse lastUpdate string to datetime object if it exists and convert to user timezone
         if 'lastUpdate' in conv and conv['lastUpdate']:
             try:
                 # Handle ISO format string: "2025-08-16T20:25:57.910+00:00"
                 if isinstance(conv['lastUpdate'], str):
                     # Try parsing with timezone
                     try:
-                        conv['lastUpdate'] = datetime.fromisoformat(conv['lastUpdate'].replace('Z', '+00:00'))
+                        dt = datetime.fromisoformat(conv['lastUpdate'].replace('Z', '+00:00'))
                     except ValueError:
                         # Fallback to simpler format
                         try:
-                            conv['lastUpdate'] = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
+                            dt = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
                         except ValueError:
                             try:
-                                conv['lastUpdate'] = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
+                                dt = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
                             except ValueError:
                                 # If all parsing fails, keep as string
-                                pass
+                                dt = None
+                    
+                    if dt:
+                        # Ensure it's timezone-aware (assume UTC if not specified)
+                        if dt.tzinfo is None:
+                            dt = timezone.make_aware(dt, timezone.utc)
+                        # Convert to user's timezone (or default timezone if not set)
+                        conv['lastUpdate'] = timezone.localtime(dt)
             except Exception as e:
                 if settings.DEBUG:
                     print(f"Error parsing lastUpdate for conversation {conv.get('chatId', 'unknown')}: {e}")
