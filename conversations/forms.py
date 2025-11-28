@@ -89,6 +89,16 @@ class AgentEditForm(forms.Form):
         }),
         help_text='Only visible to admins'
     )
+    new_password = forms.CharField(
+        max_length=128,
+        required=False,
+        label='New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Leave blank to keep current password'
+        }),
+        help_text='Only admins can change passwords. Leave blank to keep current password.'
+    )
     
     def __init__(self, *args, **kwargs):
         profile_instance = kwargs.pop('profile_instance', None)
