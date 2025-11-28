@@ -114,7 +114,6 @@ def conversation_list(request):
             conv['envolvedSellersDisplay'] = []
     
     # Get filter options (with error handling)
-    from django.conf import settings
     try:
         all_sellers_raw = get_all_sellers()
         # Map sellers to display names (email if available, otherwise UUID)
