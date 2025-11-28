@@ -229,15 +229,15 @@ def team_detail(request, team_id):
             if manager_id:
                 try:
                     manager_to_remove = UserProfile.objects.get(pk=manager_id, team=team)
-                    # Only remove if there are other managers, or if it's the only one, warn
-                    other_managers = managers.exclude(pk=manager_id)
-                    if other_managers.exists():
-                        manager_to_remove.team = None
-                        manager_to_remove.save()
-                        messages.success(request, f'Manager {manager_to_remove.get_display_name()} removed from team')
-                        return redirect('team_detail', team_id=team_id)
-                    else:
-                        messages.error(request, 'Cannot remove the last manager. Teams must have at least one Manager, Director, or Admin.')
+                    # Remove the manager from the team
+                    manager_to_remove.team = None
+                    manager_to_remove.save()
+                    messages.success(request, f'Manager {manager_to_remove.get_display_name()} removed from team')
+                    # Check if team still has a manager
+                    remaining_managers = team.members.filter(role__in=['Manager', 'Director', 'Admin']).exists()
+                    if not remaining_managers:
+                        messages.warning(request, 'Warning: This team now has no manager. Please assign a Manager, Director, or Admin to this team.')
+                    return redirect('team_detail', team_id=team_id)
                 except UserProfile.DoesNotExist:
                     messages.error(request, 'Manager not found')
         elif 'delete_team' in request.POST:

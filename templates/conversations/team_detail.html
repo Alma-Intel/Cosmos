@@ -194,11 +194,11 @@
                 {% if manager.cell_phone %}
                 <div><strong>Phone:</strong> {{ manager.cell_phone }}</div>
                 {% endif %}
-                {% if can_edit_team and managers|length > 1 %}
+                {% if can_edit_team %}
                 <form method="post" style="margin-top: 0.5rem; display: inline-block;">
                     {% csrf_token %}
                     <input type="hidden" name="remove_manager" value="{{ manager.id }}">
-                    <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove this manager from the team?');">
+                    <button type="submit" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remove this manager from the team?{% if managers|length == 1 %} Warning: This is the last manager. The team will have no manager after removal.{% endif %}');">
                         Remove from Team
                     </button>
                 </form>
