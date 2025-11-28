@@ -43,7 +43,7 @@ class AgentEditForm(forms.Form):
         })
     )
     team = forms.ModelChoiceField(
-        queryset=Team.objects.all(),
+        queryset=Team.objects.none(),  # Will be set in __init__
         required=False,
         label='Team',
         widget=forms.Select(attrs={
@@ -96,6 +96,18 @@ class AgentEditForm(forms.Form):
         current_profile = kwargs.pop('current_profile', None)
         super().__init__(*args, **kwargs)
         
+        # Filter teams by organization (admins can see all)
+        if current_profile:
+            if current_profile.is_admin():
+                self.fields['team'].queryset = Team.objects.all().order_by('name')
+            else:
+                if current_profile.alma_internal_organization:
+                    self.fields['team'].queryset = Team.objects.filter(alma_internal_organization=current_profile.alma_internal_organization).order_by('name')
+                else:
+                    self.fields['team'].queryset = Team.objects.none()
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+        
         if user_instance:
             self.fields['first_name'].initial = user_instance.first_name
             self.fields['last_name'].initial = user_instance.last_name
@@ -107,7 +119,6 @@ class AgentEditForm(forms.Form):
             self.fields['external_uuid'].initial = profile_instance.external_uuid or ''
             self.fields['cell_phone'].initial = profile_instance.cell_phone or ''
             self.fields['alma_internal_uuid'].initial = profile_instance.alma_internal_uuid or ''
-            self.fields['alma_internal_organization'].initial = profile_instance.alma_internal_organization or ''
             self.fields['alma_internal_organization'].initial = profile_instance.alma_internal_organization or ''
         
             # Hide fields based on permissions
@@ -178,7 +189,7 @@ class UserCreateForm(forms.Form):
         initial='User'
     )
     team = forms.ModelChoiceField(
-        queryset=Team.objects.all(),
+        queryset=Team.objects.none(),  # Will be set in __init__
         required=False,
         label='Team',
         widget=forms.Select(attrs={
@@ -229,6 +240,18 @@ class UserCreateForm(forms.Form):
         current_profile = kwargs.pop('current_profile', None)
         super().__init__(*args, **kwargs)
         
+        # Filter teams by organization (admins can see all)
+        if current_profile:
+            if current_profile.is_admin():
+                self.fields['team'].queryset = Team.objects.all().order_by('name')
+            else:
+                if current_profile.alma_internal_organization:
+                    self.fields['team'].queryset = Team.objects.filter(alma_internal_organization=current_profile.alma_internal_organization).order_by('name')
+                else:
+                    self.fields['team'].queryset = Team.objects.none()
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+        
         # Hide fields based on permissions
         if current_profile:
             # Only admins can see ALMA internal UUID and Organization
@@ -259,7 +282,7 @@ class UserCreateForm(forms.Form):
 class TeamCreateForm(forms.ModelForm):
     """Form for creating new teams - requires a manager to be assigned"""
     manager = forms.ModelChoiceField(
-        queryset=UserProfile.objects.filter(role__in=['Manager', 'Director', 'Admin']),
+        queryset=UserProfile.objects.none(),  # Will be set in __init__
         required=True,
         label='Manager',
         help_text='Select a Manager, Director, or Admin to assign to this team',
@@ -267,6 +290,25 @@ class TeamCreateForm(forms.ModelForm):
             'class': 'form-control'
         })
     )
+    
+    def __init__(self, *args, **kwargs):
+        current_profile = kwargs.pop('current_profile', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter managers by organization (admins can see all)
+        if current_profile:
+            if current_profile.is_admin():
+                self.fields['manager'].queryset = UserProfile.objects.filter(role__in=['Manager', 'Director', 'Admin']).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+            else:
+                if current_profile.alma_internal_organization:
+                    self.fields['manager'].queryset = UserProfile.objects.filter(
+                        role__in=['Manager', 'Director', 'Admin'],
+                        alma_internal_organization=current_profile.alma_internal_organization
+                    ).select_related('user').order_by('user__last_name', 'user__first_name', 'user__username')
+                else:
+                    self.fields['manager'].queryset = UserProfile.objects.none()
+        else:
+            self.fields['manager'].queryset = UserProfile.objects.none()
     
     class Meta:
         model = Team

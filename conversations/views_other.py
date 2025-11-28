@@ -87,7 +87,7 @@ def team_create(request):
         raise PermissionDenied("You don't have permission to create teams.")
     
     if request.method == 'POST':
-        form = TeamCreateForm(request.POST)
+        form = TeamCreateForm(request.POST, current_profile=current_profile)
         if form.is_valid():
             try:
                 team = form.save(commit=False)
@@ -103,7 +103,7 @@ def team_create(request):
             except Exception as e:
                 messages.error(request, f'Error creating team: {str(e)}')
     else:
-        form = TeamCreateForm()
+        form = TeamCreateForm(current_profile=current_profile)
     
     context = {
         'title': 'Create New Team',
@@ -116,8 +116,15 @@ def team_create(request):
 @login_required
 def agentes_list(request):
     """List all agents/users with filtering"""
+    # Get current user's profile for permission checks
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
     # Get all users that the current user can view
     profiles = get_user_team_members(request.user)
+    
+    # Filter by alma_internal_organization (admins can see all)
+    if not current_profile.is_admin() and current_profile.alma_internal_organization:
+        profiles = profiles.filter(alma_internal_organization=current_profile.alma_internal_organization)
     
     # Filtering options
     role_filter = request.GET.get('role', '')
@@ -144,10 +151,14 @@ def agentes_list(request):
     
     # Get filter options
     all_roles = ['User', 'Manager', 'Director', 'Admin']
-    all_teams = Team.objects.all().order_by('name')
-    
-    # Get current user's profile for permission checks
-    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    # Filter teams by organization (admins can see all)
+    if current_profile.is_admin():
+        all_teams = Team.objects.all().order_by('name')
+    else:
+        if current_profile.alma_internal_organization:
+            all_teams = Team.objects.filter(alma_internal_organization=current_profile.alma_internal_organization).order_by('name')
+        else:
+            all_teams = Team.objects.none()
     
     context = {
         'title': 'Agentes',
@@ -166,11 +177,17 @@ def agentes_list(request):
 @login_required
 def teams_list(request):
     """List all teams"""
-    # Get all teams
-    teams = Team.objects.all().prefetch_related('members__user').order_by('name')
-    
     # Get current user's profile for permission checks
     current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Filter teams by alma_internal_organization (admins can see all)
+    if current_profile.is_admin():
+        teams = Team.objects.all().prefetch_related('members__user').order_by('name')
+    else:
+        if current_profile.alma_internal_organization:
+            teams = Team.objects.filter(alma_internal_organization=current_profile.alma_internal_organization).prefetch_related('members__user').order_by('name')
+        else:
+            teams = Team.objects.none()
     
     # For each team, get the manager(s) and members
     teams_data = []
@@ -202,6 +219,11 @@ def team_detail(request, team_id):
     
     # Get current user's profile for permission checks
     current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Check if user can access this team (same organization or admin)
+    if not current_profile.is_admin():
+        if not current_profile.alma_internal_organization or team.alma_internal_organization != current_profile.alma_internal_organization:
+            raise PermissionDenied("You don't have permission to view this team.")
     
     # Check if user can edit/delete team (admins and directors)
     can_edit_team = current_profile.is_admin() or current_profile.is_director()
@@ -341,6 +363,11 @@ def agent_detail(request, user_id):
     
     # Get current user's profile
     current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Check if user can access this agent (same organization or admin)
+    if not current_profile.is_admin():
+        if not current_profile.alma_internal_organization or target_profile.alma_internal_organization != current_profile.alma_internal_organization:
+            raise PermissionDenied("You don't have permission to view this agent.")
     
     # Check permissions
     can_edit = current_profile.can_manage_user(target_profile)
