@@ -557,39 +557,76 @@ def analytics_friction_heuristics(request):
 
 @login_required
 def analytics_temporal_heat(request):
-    """Temporal Heatmap analytics view"""
-    from .analytics_utils import get_temporal_heat, dataframe_to_dict_list, get_summary_stats
+    """Temporal Heatmap analytics view - displays as visual heatmap"""
+    from .analytics_utils import get_temporal_heat, get_summary_stats
+    import pandas as pd
     
     df = get_temporal_heat()
     stats = get_summary_stats(df)
     
-    # Get pagination parameters
-    page = int(request.GET.get('page', 1))
-    per_page = 50
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-    
-    # Get data for current page
+    # Get available metrics for dropdown
+    available_metrics = []
     if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+        available_metrics = [col for col in df.columns if col not in ['DayOfWeek', 'Hour']]
+    
+    # Get metric type from query parameter (default to first available or interaction_count)
+    requested_metric = request.GET.get('metric', '')
+    if requested_metric and requested_metric in available_metrics:
+        metric_type = requested_metric
+    elif available_metrics:
+        metric_type = available_metrics[0]
     else:
-        data = []
-        total_pages = 0
+        metric_type = 'interaction_count'
+    
+    # Prepare heatmap data as a list of lists for easier template access
+    heatmap_data = []
+    max_value = 0
+    min_value = 0
+    
+    if df is not None and not df.empty:
+        # Ensure we have the required columns
+        if 'DayOfWeek' in df.columns and 'Hour' in df.columns and metric_type in df.columns:
+            # Create a pivot table for the heatmap
+            # DayOfWeek as rows, Hour as columns
+            pivot_df = df.pivot_table(
+                values=metric_type,
+                index='DayOfWeek',
+                columns='Hour',
+                fill_value=0,
+                aggfunc='sum'
+            )
+            
+            # Convert to list of lists for template (7 days × 24 hours)
+            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            for day in range(7):  # 0-6 for Monday-Sunday
+                day_row = {
+                    'day_name': day_names[day],
+                    'day_num': day,
+                    'hours': []
+                }
+                for hour in range(24):  # 0-23
+                    if day in pivot_df.index and hour in pivot_df.columns:
+                        value = float(pivot_df.loc[day, hour])
+                    else:
+                        value = 0.0
+                    day_row['hours'].append({
+                        'hour': hour,
+                        'value': value
+                    })
+                    max_value = max(max_value, value)
+                    min_value = min(min_value, value)
+                heatmap_data.append(day_row)
     
     context = {
         'title': 'Temporal Heatmap',
-        'data': data,
+        'heatmap_data': heatmap_data,
         'stats': stats,
-        'current_page': page,
-        'total_pages': total_pages,
-        'has_previous': page > 1,
-        'has_next': page < total_pages,
-        'previous_page': page - 1 if page > 1 else None,
-        'next_page': page + 1 if page < total_pages else None,
+        'metric_type': metric_type,
+        'available_metrics': available_metrics,
+        'max_value': max_value,
+        'min_value': min_value,
     }
-    return render(request, 'conversations/analytics_detail.html', context)
+    return render(request, 'conversations/analytics_temporal_heat.html', context)
 
 
 @login_required
