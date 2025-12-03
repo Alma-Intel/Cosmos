@@ -484,10 +484,10 @@ def analytics(request):
 @login_required
 def analytics_cx_volumetrics(request):
     """CX Volumetrics analytics view"""
-    from .analytics_utils import get_cx_volumetrics, dataframe_to_dict_list, get_summary_stats
+    from .analytics_utils import get_cx_volumetrics, get_data_slice, get_summary_stats
     
-    df = get_cx_volumetrics()
-    stats = get_summary_stats(df)
+    data = get_cx_volumetrics()
+    stats = get_summary_stats(data)
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -496,17 +496,16 @@ def analytics_cx_volumetrics(request):
     end_idx = start_idx + per_page
     
     # Get data for current page
-    if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+    if data is not None and len(data) > 0:
+        paginated_data = data[start_idx:end_idx]
+        total_pages = (len(data) + per_page - 1) // per_page
     else:
-        data = []
+        paginated_data = []
         total_pages = 0
     
     context = {
         'title': 'CX Volumetrics',
-        'data': data,
+        'data': paginated_data,
         'stats': stats,
         'current_page': page,
         'total_pages': total_pages,
@@ -521,10 +520,10 @@ def analytics_cx_volumetrics(request):
 @login_required
 def analytics_friction_heuristics(request):
     """Friction Heuristics analytics view"""
-    from .analytics_utils import get_friction_heuristics, dataframe_to_dict_list, get_summary_stats
+    from .analytics_utils import get_friction_heuristics, get_data_slice, get_summary_stats
     
-    df = get_friction_heuristics()
-    stats = get_summary_stats(df)
+    data = get_friction_heuristics()
+    stats = get_summary_stats(data)
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -533,17 +532,16 @@ def analytics_friction_heuristics(request):
     end_idx = start_idx + per_page
     
     # Get data for current page
-    if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+    if data is not None and len(data) > 0:
+        paginated_data = data[start_idx:end_idx]
+        total_pages = (len(data) + per_page - 1) // per_page
     else:
-        data = []
+        paginated_data = []
         total_pages = 0
     
     context = {
         'title': 'Friction Heuristics',
-        'data': data,
+        'data': paginated_data,
         'stats': stats,
         'current_page': page,
         'total_pages': total_pages,
@@ -559,16 +557,17 @@ def analytics_friction_heuristics(request):
 def analytics_temporal_heat(request):
     """Temporal Heatmap analytics view - displays as visual heatmap"""
     from .analytics_utils import get_temporal_heat, get_summary_stats
-    import pandas as pd
     
-    df = get_temporal_heat()
-    stats = get_summary_stats(df)
+    data = get_temporal_heat()
+    stats = get_summary_stats(data)
     
-    # Get available metrics for dropdown
+    # Get available metrics for dropdown (exclude day_of_week, day_name, hour)
     available_metrics = []
     available_metrics_display = []
-    if df is not None and not df.empty:
-        available_metrics = [col for col in df.columns if col not in ['DayOfWeek', 'Hour']]
+    if data is not None and len(data) > 0:
+        # Get columns from first record
+        all_columns = list(data[0].keys()) if data else []
+        available_metrics = [col for col in all_columns if col not in ['day_of_week', 'day_name', 'hour']]
         # Format metric names for display (replace underscores with spaces, title case)
         for metric in available_metrics:
             display_name = metric.replace('_', ' ').title()
@@ -590,40 +589,42 @@ def analytics_temporal_heat(request):
     heatmap_data = []
     max_value = 0
     min_value = 0
+    has_heatmap_data = False
     
-    if df is not None and not df.empty:
-        # Ensure we have the required columns
-        if 'DayOfWeek' in df.columns and 'Hour' in df.columns and metric_type in df.columns:
-            # Create a pivot table for the heatmap
-            # DayOfWeek as rows, Hour as columns
-            pivot_df = df.pivot_table(
-                values=metric_type,
-                index='DayOfWeek',
-                columns='Hour',
-                fill_value=0,
-                aggfunc='sum'
-            )
-            
-            # Convert to list of lists for template (7 days × 24 hours)
-            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-            for day in range(7):  # 0-6 for Monday-Sunday
-                day_row = {
-                    'day_name': day_names[day],
-                    'day_num': day,
-                    'hours': []
-                }
-                for hour in range(24):  # 0-23
-                    if day in pivot_df.index and hour in pivot_df.columns:
-                        value = float(pivot_df.loc[day, hour])
-                    else:
-                        value = 0.0
-                    day_row['hours'].append({
-                        'hour': hour,
-                        'value': value
-                    })
-                    max_value = max(max_value, value)
-                    min_value = min(min_value, value)
-                heatmap_data.append(day_row)
+    if data is not None and len(data) > 0:
+        # Build a dictionary keyed by (day_of_week, hour) for quick lookup
+        data_dict = {}
+        for record in data:
+            day = record.get('day_of_week', 0)
+            hour = record.get('hour', 0)
+            value = record.get(metric_type, 0) or 0
+            key = (day, hour)
+            # Sum if multiple records for same day/hour
+            if key in data_dict:
+                data_dict[key] += float(value)
+            else:
+                data_dict[key] = float(value)
+        
+        # Convert to list of lists for template (7 days × 24 hours)
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        for day in range(7):  # 0-6 for Monday-Sunday
+            day_row = {
+                'day_name': day_names[day],
+                'day_num': day,
+                'hours': []
+            }
+            for hour in range(24):  # 0-23
+                key = (day, hour)
+                value = float(data_dict.get(key, 0))
+                day_row['hours'].append({
+                    'hour': hour,
+                    'value': value
+                })
+                max_value = max(max_value, value)
+                min_value = min(min_value, value)
+            heatmap_data.append(day_row)
+        
+        has_heatmap_data = len(heatmap_data) > 0
     
     # Get display name for current metric
     metric_display = metric_type.replace('_', ' ').title()
@@ -631,6 +632,7 @@ def analytics_temporal_heat(request):
     context = {
         'title': 'Temporal Heatmap',
         'heatmap_data': heatmap_data,
+        'has_heatmap_data': has_heatmap_data,
         'stats': stats,
         'metric_type': metric_type,
         'metric_display': metric_display,
@@ -645,10 +647,10 @@ def analytics_temporal_heat(request):
 @login_required
 def analytics_churn_risk(request):
     """Churn Risk Monitor analytics view"""
-    from .analytics_utils import get_churn_risk_monitor, dataframe_to_dict_list, get_summary_stats
+    from .analytics_utils import get_churn_risk_monitor, get_data_slice, get_summary_stats
     
-    df = get_churn_risk_monitor()
-    stats = get_summary_stats(df)
+    data = get_churn_risk_monitor()
+    stats = get_summary_stats(data)
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -657,17 +659,16 @@ def analytics_churn_risk(request):
     end_idx = start_idx + per_page
     
     # Get data for current page
-    if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+    if data is not None and len(data) > 0:
+        paginated_data = data[start_idx:end_idx]
+        total_pages = (len(data) + per_page - 1) // per_page
     else:
-        data = []
+        paginated_data = []
         total_pages = 0
     
     context = {
         'title': 'Churn Risk Monitor',
-        'data': data,
+        'data': paginated_data,
         'stats': stats,
         'current_page': page,
         'total_pages': total_pages,
@@ -682,10 +683,10 @@ def analytics_churn_risk(request):
 @login_required
 def analytics_sales_velocity(request):
     """Sales Velocity analytics view"""
-    from .analytics_utils import get_sales_velocity, dataframe_to_dict_list, get_summary_stats
+    from .analytics_utils import get_sales_velocity, get_data_slice, get_summary_stats
     
-    df = get_sales_velocity()
-    stats = get_summary_stats(df)
+    data = get_sales_velocity()
+    stats = get_summary_stats(data)
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -694,17 +695,16 @@ def analytics_sales_velocity(request):
     end_idx = start_idx + per_page
     
     # Get data for current page
-    if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+    if data is not None and len(data) > 0:
+        paginated_data = data[start_idx:end_idx]
+        total_pages = (len(data) + per_page - 1) // per_page
     else:
-        data = []
+        paginated_data = []
         total_pages = 0
     
     context = {
         'title': 'Sales Velocity',
-        'data': data,
+        'data': paginated_data,
         'stats': stats,
         'current_page': page,
         'total_pages': total_pages,
@@ -719,10 +719,10 @@ def analytics_sales_velocity(request):
 @login_required
 def analytics_segmentation_matrix(request):
     """Segmentation Matrix analytics view"""
-    from .analytics_utils import get_segmentation_matrix, dataframe_to_dict_list, get_summary_stats
+    from .analytics_utils import get_segmentation_matrix, get_data_slice, get_summary_stats
     
-    df = get_segmentation_matrix()
-    stats = get_summary_stats(df)
+    data = get_segmentation_matrix()
+    stats = get_summary_stats(data)
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -731,17 +731,16 @@ def analytics_segmentation_matrix(request):
     end_idx = start_idx + per_page
     
     # Get data for current page
-    if df is not None and not df.empty:
-        paginated_df = df.iloc[start_idx:end_idx]
-        data = dataframe_to_dict_list(paginated_df)
-        total_pages = (len(df) + per_page - 1) // per_page
+    if data is not None and len(data) > 0:
+        paginated_data = data[start_idx:end_idx]
+        total_pages = (len(data) + per_page - 1) // per_page
     else:
-        data = []
+        paginated_data = []
         total_pages = 0
     
     context = {
         'title': 'Segmentation Matrix',
-        'data': data,
+        'data': paginated_data,
         'stats': stats,
         'current_page': page,
         'total_pages': total_pages,

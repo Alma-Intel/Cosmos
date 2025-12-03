@@ -1,0 +1,1346 @@
+[
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 0,
+    "interaction_count": 26041,
+    "friction_count": 932,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 0,
+    "day_name": "Monday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 0,
+    "interaction_count": 26294,
+    "friction_count": 1018,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 1,
+    "day_name": "Tuesday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 0,
+    "interaction_count": 24594,
+    "friction_count": 949,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 2,
+    "day_name": "Wednesday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 0,
+    "interaction_count": 25216,
+    "friction_count": 961,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 3,
+    "day_name": "Thursday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 0,
+    "interaction_count": 23228,
+    "friction_count": 872,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 4,
+    "day_name": "Friday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 0,
+    "interaction_count": 632,
+    "friction_count": 25,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 5,
+    "day_name": "Saturday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 0,
+    "interaction_count": 340,
+    "friction_count": 15,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 1,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 2,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 3,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 4,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 5,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 6,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 7,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 8,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 9,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 10,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 11,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 12,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 13,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 14,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 15,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 16,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 17,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 18,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 19,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 20,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 21,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 22,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  },
+  {
+    "day_of_week": 6,
+    "day_name": "Sunday",
+    "hour": 23,
+    "interaction_count": 0,
+    "friction_count": 0,
+    "friday_afternoon_friction_count": 0
+  }
+]
