@@ -162,9 +162,9 @@
     <div class="heatmap-controls">
         <label for="metric-select">Metric:</label>
         <select id="metric-select" onchange="window.location.href='?metric=' + this.value">
-            {% for metric in available_metrics %}
-            <option value="{{ metric }}" {% if metric == metric_type %}selected{% endif %}>
-                {{ metric|title|replace:"_":" " }}
+            {% for metric_display in available_metrics_display %}
+            <option value="{{ metric_display.value }}" {% if metric_display.value == metric_type %}selected{% endif %}>
+                {{ metric_display.display }}
             </option>
             {% endfor %}
         </select>

@@ -566,8 +566,16 @@ def analytics_temporal_heat(request):
     
     # Get available metrics for dropdown
     available_metrics = []
+    available_metrics_display = []
     if df is not None and not df.empty:
         available_metrics = [col for col in df.columns if col not in ['DayOfWeek', 'Hour']]
+        # Format metric names for display (replace underscores with spaces, title case)
+        for metric in available_metrics:
+            display_name = metric.replace('_', ' ').title()
+            available_metrics_display.append({
+                'value': metric,
+                'display': display_name
+            })
     
     # Get metric type from query parameter (default to first available or interaction_count)
     requested_metric = request.GET.get('metric', '')
@@ -617,12 +625,17 @@ def analytics_temporal_heat(request):
                     min_value = min(min_value, value)
                 heatmap_data.append(day_row)
     
+    # Get display name for current metric
+    metric_display = metric_type.replace('_', ' ').title()
+    
     context = {
         'title': 'Temporal Heatmap',
         'heatmap_data': heatmap_data,
         'stats': stats,
         'metric_type': metric_type,
+        'metric_display': metric_display,
         'available_metrics': available_metrics,
+        'available_metrics_display': available_metrics_display,
         'max_value': max_value,
         'min_value': min_value,
     }
