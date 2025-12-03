@@ -23,6 +23,12 @@ urlpatterns = [
     path('clientes/', views_other.clientes_list, name='clientes_list'),
     path('bots/', views_other.bots_list, name='bots_list'),
     path('analytics/', views_other.analytics, name='analytics'),
+    path('analytics/cx-volumetrics/', views_other.analytics_cx_volumetrics, name='analytics_cx_volumetrics'),
+    path('analytics/friction-heuristics/', views_other.analytics_friction_heuristics, name='analytics_friction_heuristics'),
+    path('analytics/temporal-heat/', views_other.analytics_temporal_heat, name='analytics_temporal_heat'),
+    path('analytics/churn-risk/', views_other.analytics_churn_risk, name='analytics_churn_risk'),
+    path('analytics/sales-velocity/', views_other.analytics_sales_velocity, name='analytics_sales_velocity'),
+    path('analytics/segmentation-matrix/', views_other.analytics_segmentation_matrix, name='analytics_segmentation_matrix'),
     path('profile/', views_other.profile, name='profile'),
 ]
 

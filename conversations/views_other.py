@@ -427,11 +427,280 @@ def workspace(request):
 
 @login_required
 def analytics(request):
-    """Analytics view"""
-    context = {
-        'title': 'Analytics',
+    """Analytics dashboard - main entry point"""
+    from .analytics_utils import (
+        get_cx_volumetrics, get_friction_heuristics, get_temporal_heat,
+        get_churn_risk_monitor, get_sales_velocity, get_segmentation_matrix,
+        get_summary_stats
+    )
+    
+    # Get summary stats for each dataset
+    datasets = {
+        'cx_volumetrics': {
+            'name': 'CX Volumetrics',
+            'description': 'Manager-Client pairs with interaction velocity, neediness ratio, load metrics',
+            'stats': get_summary_stats(get_cx_volumetrics()),
+            'url': 'analytics_cx_volumetrics'
+        },
+        'friction_heuristics': {
+            'name': 'Friction Heuristics',
+            'description': 'Individual interactions flagged with urgency/failure/escalation scores',
+            'stats': get_summary_stats(get_friction_heuristics()),
+            'url': 'analytics_friction_heuristics'
+        },
+        'temporal_heat': {
+            'name': 'Temporal Heatmap',
+            'description': 'Heatmap data (DayOfWeek × Hour) for volume and friction patterns',
+            'stats': get_summary_stats(get_temporal_heat()),
+            'url': 'analytics_temporal_heat'
+        },
+        'churn_risk': {
+            'name': 'Churn Risk Monitor',
+            'description': 'Churn risk scores by client',
+            'stats': get_summary_stats(get_churn_risk_monitor()),
+            'url': 'analytics_churn_risk'
+        },
+        'sales_velocity': {
+            'name': 'Sales Velocity',
+            'description': 'Sales pipeline velocity metrics',
+            'stats': get_summary_stats(get_sales_velocity()),
+            'url': 'analytics_sales_velocity'
+        },
+        'segmentation_matrix': {
+            'name': 'Segmentation Matrix',
+            'description': 'Client segmentation matrix',
+            'stats': get_summary_stats(get_segmentation_matrix()),
+            'url': 'analytics_segmentation_matrix'
+        }
     }
-    return render(request, 'conversations/placeholder.html', context)
+    
+    context = {
+        'title': 'Analytics Dashboard',
+        'datasets': datasets,
+    }
+    return render(request, 'conversations/analytics_dashboard.html', context)
+
+
+@login_required
+def analytics_cx_volumetrics(request):
+    """CX Volumetrics analytics view"""
+    from .analytics_utils import get_cx_volumetrics, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_cx_volumetrics()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'CX Volumetrics',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_friction_heuristics(request):
+    """Friction Heuristics analytics view"""
+    from .analytics_utils import get_friction_heuristics, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_friction_heuristics()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'Friction Heuristics',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_temporal_heat(request):
+    """Temporal Heatmap analytics view"""
+    from .analytics_utils import get_temporal_heat, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_temporal_heat()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'Temporal Heatmap',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_churn_risk(request):
+    """Churn Risk Monitor analytics view"""
+    from .analytics_utils import get_churn_risk_monitor, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_churn_risk_monitor()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'Churn Risk Monitor',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_sales_velocity(request):
+    """Sales Velocity analytics view"""
+    from .analytics_utils import get_sales_velocity, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_sales_velocity()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'Sales Velocity',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_segmentation_matrix(request):
+    """Segmentation Matrix analytics view"""
+    from .analytics_utils import get_segmentation_matrix, dataframe_to_dict_list, get_summary_stats
+    
+    df = get_segmentation_matrix()
+    stats = get_summary_stats(df)
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 50
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if df is not None and not df.empty:
+        paginated_df = df.iloc[start_idx:end_idx]
+        data = dataframe_to_dict_list(paginated_df)
+        total_pages = (len(df) + per_page - 1) // per_page
+    else:
+        data = []
+        total_pages = 0
+    
+    context = {
+        'title': 'Segmentation Matrix',
+        'data': data,
+        'stats': stats,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+    }
+    return render(request, 'conversations/analytics_detail.html', context)
 
 
 @login_required
