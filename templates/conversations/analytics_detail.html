@@ -56,8 +56,26 @@
             <thead>
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
                     {% for key in data.0.keys %}
-                    <th style="padding: 1rem; text-align: left; font-weight: 600; color: #333; font-size: 0.9rem; white-space: nowrap;">
-                        {{ key }}
+                    <th {% if sort_column == key %}style="padding: 1rem; text-align: left; font-weight: 600; color: #333; font-size: 0.9rem; white-space: nowrap; background: #e3f2fd;"{% else %}style="padding: 1rem; text-align: left; font-weight: 600; color: #333; font-size: 0.9rem; white-space: nowrap;"{% endif %}>
+                        {% if sort_column %}
+                            <a href="?sort={{ key }}&order={% if sort_column == key and sort_order == 'asc' %}desc{% else %}asc{% endif %}" 
+                               style="text-decoration: none; color: #333; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <span>{{ key }}</span>
+                                {% if sort_column == key %}
+                                    <span style="font-size: 0.7rem; color: #667eea;">
+                                        {% if sort_order == 'asc' %}▲{% else %}▼{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span style="font-size: 0.7rem; color: #ccc;">⇅</span>
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            <a href="?sort={{ key }}&order=asc" 
+                               style="text-decoration: none; color: #333; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <span>{{ key }}</span>
+                                <span style="font-size: 0.7rem; color: #ccc;">⇅</span>
+                            </a>
+                        {% endif %}
                     </th>
                     {% endfor %}
                 </tr>
@@ -84,7 +102,7 @@
     {% if total_pages > 1 %}
     <div style="padding: 1.5rem; border-top: 1px solid #e0e0e0; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
         {% if has_previous %}
-        <a href="?page={{ previous_page }}" 
+        <a href="?page={{ previous_page }}{{ query_string }}" 
            style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #667eea; transition: all 0.3s;"
            onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#667eea'"
            onmouseout="this.style.background='white'; this.style.borderColor='#ddd'">
@@ -99,7 +117,7 @@
         </span>
         
         {% if has_next %}
-        <a href="?page={{ next_page }}" 
+        <a href="?page={{ next_page }}{{ query_string }}" 
            style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #667eea; transition: all 0.3s;"
            onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#667eea'"
            onmouseout="this.style.background='white'; this.style.borderColor='#ddd'">

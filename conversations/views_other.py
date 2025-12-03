@@ -646,11 +646,52 @@ def analytics_temporal_heat(request):
 
 @login_required
 def analytics_churn_risk(request):
-    """Churn Risk Monitor analytics view"""
+    """Churn Risk Monitor analytics view with sorting"""
     from .analytics_utils import get_churn_risk_monitor, get_data_slice, get_summary_stats
     
     data = get_churn_risk_monitor()
     stats = get_summary_stats(data)
+    
+    # Get sorting parameters
+    sort_column = request.GET.get('sort', '')
+    sort_order = request.GET.get('order', 'asc')  # 'asc' or 'desc'
+    
+    # Sort data if sort column is specified
+    if data is not None and len(data) > 0 and sort_column:
+        if sort_column in data[0].keys():
+            # Helper function to determine if value is numeric
+            def is_numeric(value):
+                if value is None:
+                    return False
+                try:
+                    float(str(value))
+                    return True
+                except (ValueError, TypeError):
+                    return False
+            
+            # Check if all values in column are numeric
+            sample_values = [record.get(sort_column) for record in data[:10] if record.get(sort_column) is not None]
+            all_numeric = all(is_numeric(v) for v in sample_values) if sample_values else False
+            
+            if all_numeric:
+                # Sort as numeric
+                def numeric_key(x):
+                    val = x.get(sort_column)
+                    if val is None:
+                        return float('-inf') if sort_order == 'desc' else float('inf')
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        return 0
+                data = sorted(data, key=numeric_key, reverse=(sort_order == 'desc'))
+            else:
+                # Sort as string
+                def string_key(x):
+                    val = x.get(sort_column)
+                    if val is None:
+                        return '' if sort_order == 'desc' else 'zzz'
+                    return str(val).lower()
+                data = sorted(data, key=string_key, reverse=(sort_order == 'desc'))
     
     # Get pagination parameters
     page = int(request.GET.get('page', 1))
@@ -666,6 +707,18 @@ def analytics_churn_risk(request):
         paginated_data = []
         total_pages = 0
     
+    # Build query string for pagination (preserve sort parameters)
+    query_params = []
+    if sort_column:
+        query_params.append(f'sort={sort_column}')
+    if sort_order:
+        query_params.append(f'order={sort_order}')
+    query_string = '&'.join(query_params)
+    if query_string:
+        query_string = '&' + query_string
+    else:
+        query_string = ''
+    
     context = {
         'title': 'Churn Risk Monitor',
         'data': paginated_data,
@@ -676,6 +729,9 @@ def analytics_churn_risk(request):
         'has_next': page < total_pages,
         'previous_page': page - 1 if page > 1 else None,
         'next_page': page + 1 if page < total_pages else None,
+        'sort_column': sort_column,
+        'sort_order': sort_order,
+        'query_string': query_string,
     }
     return render(request, 'conversations/analytics_detail.html', context)
 
