@@ -54,6 +54,22 @@ def get_churn_risk_monitor():
     """Load churn risk monitor data"""
     return load_json_file('gold_churn_risk_monitor_20251126.json')
 
+def get_clients_analysis():
+    """Load clients analysis data"""
+    file_path = GOLD_DATA_DIR / 'clients_analysis.json'
+    
+    if not file_path.exists():
+        return None, None
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        # Return both the clients array and metadata
+        return data.get('clients', []), data.get('metadata', {})
+    except Exception as e:
+        print(f"Error loading clients_analysis.json: {e}")
+        return None, None
+
 
 def get_sales_velocity():
     """Load sales velocity data"""

@@ -29,6 +29,18 @@
             <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Columns</div>
             <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ stats.column_count }}</div>
         </div>
+        {% if metadata.total_clients %}
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Total Clients</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ metadata.total_clients }}</div>
+        </div>
+        {% endif %}
+        {% if metadata.total_contacts %}
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Total Contacts</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ metadata.total_contacts }}</div>
+        </div>
+        {% endif %}
     </div>
     
     {% if stats.columns %}
@@ -87,6 +99,34 @@
                     <td style="padding: 0.75rem 1rem; color: #555; font-size: 0.9rem;">
                         {% if value is None %}
                             <span style="color: #999; font-style: italic;">—</span>
+                        {% elif key == 'topics' and value|length > 0 %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                {% for topic in value %}
+                                <span style="padding: 0.2rem 0.5rem; background: #e3f2fd; border-radius: 3px; font-size: 0.75rem; color: #1976d2;">{{ topic }}</span>
+                                {% endfor %}
+                            </div>
+                        {% elif key == 'risk_level' %}
+                            {% if value == 'critical' %}
+                                <span style="padding: 0.25rem 0.5rem; background: #ffebee; color: #c62828; border-radius: 3px; font-weight: 600; font-size: 0.85rem;">{{ value|upper }}</span>
+                            {% elif value == 'high' %}
+                                <span style="padding: 0.25rem 0.5rem; background: #fff3e0; color: #e65100; border-radius: 3px; font-weight: 600; font-size: 0.85rem;">{{ value|upper }}</span>
+                            {% elif value == 'medium' %}
+                                <span style="padding: 0.25rem 0.5rem; background: #fff9c4; color: #f57f17; border-radius: 3px; font-weight: 600; font-size: 0.85rem;">{{ value|upper }}</span>
+                            {% elif value == 'low' %}
+                                <span style="padding: 0.25rem 0.5rem; background: #e8f5e9; color: #2e7d32; border-radius: 3px; font-weight: 600; font-size: 0.85rem;">{{ value|upper }}</span>
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
+                        {% elif key == 'trend' %}
+                            {% if value == 'up' %}
+                                <span style="color: #2e7d32; font-weight: 600;">▲ {{ value|upper }}</span>
+                            {% elif value == 'down' %}
+                                <span style="color: #c62828; font-weight: 600;">▼ {{ value|upper }}</span>
+                            {% elif value == 'stable' %}
+                                <span style="color: #666; font-weight: 600;">→ {{ value|upper }}</span>
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
                         {% else %}
                             {{ value }}
                         {% endif %}

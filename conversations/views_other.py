@@ -646,10 +646,10 @@ def analytics_temporal_heat(request):
 
 @login_required
 def analytics_churn_risk(request):
-    """Churn Risk Monitor analytics view with sorting"""
-    from .analytics_utils import get_churn_risk_monitor, get_data_slice, get_summary_stats
+    """Churn Risk Monitor analytics view with sorting - uses clients_analysis.json"""
+    from .analytics_utils import get_clients_analysis, get_data_slice, get_summary_stats
     
-    data = get_churn_risk_monitor()
+    data, metadata = get_clients_analysis()
     stats = get_summary_stats(data)
     
     # Get sorting parameters
@@ -663,6 +663,8 @@ def analytics_churn_risk(request):
             def is_numeric(value):
                 if value is None:
                     return False
+                if isinstance(value, list):
+                    return False
                 try:
                     float(str(value))
                     return True
@@ -670,14 +672,14 @@ def analytics_churn_risk(request):
                     return False
             
             # Check if all values in column are numeric
-            sample_values = [record.get(sort_column) for record in data[:10] if record.get(sort_column) is not None]
+            sample_values = [record.get(sort_column) for record in data[:10] if record.get(sort_column) is not None and not isinstance(record.get(sort_column), list)]
             all_numeric = all(is_numeric(v) for v in sample_values) if sample_values else False
             
             if all_numeric:
                 # Sort as numeric
                 def numeric_key(x):
                     val = x.get(sort_column)
-                    if val is None:
+                    if val is None or isinstance(val, list):
                         return float('-inf') if sort_order == 'desc' else float('inf')
                     try:
                         return float(val)
@@ -685,11 +687,13 @@ def analytics_churn_risk(request):
                         return 0
                 data = sorted(data, key=numeric_key, reverse=(sort_order == 'desc'))
             else:
-                # Sort as string
+                # Sort as string (handle lists by joining them)
                 def string_key(x):
                     val = x.get(sort_column)
                     if val is None:
                         return '' if sort_order == 'desc' else 'zzz'
+                    if isinstance(val, list):
+                        return ', '.join(str(v) for v in val).lower()
                     return str(val).lower()
                 data = sorted(data, key=string_key, reverse=(sort_order == 'desc'))
     
@@ -720,9 +724,10 @@ def analytics_churn_risk(request):
         query_string = ''
     
     context = {
-        'title': 'Churn Risk Monitor',
+        'title': 'Client Analysis & Risk Monitor',
         'data': paginated_data,
         'stats': stats,
+        'metadata': metadata,
         'current_page': page,
         'total_pages': total_pages,
         'has_previous': page > 1,
