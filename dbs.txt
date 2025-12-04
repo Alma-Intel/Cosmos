@@ -1,0 +1,24 @@
+- messages db
+
+uuid (uuid, primary key) | sender_uuid (uuid, not null) | conversation_uuid (uuid, not null) | content (text, not null) | type (text, not null) | link (text, optional) | channel (text, not null) | subchannel (text, optional) | created_at (datetime, not null)| updated_at (datetime, not null)| metadata (json, optional) | origin (str, not null) | alma_internal_organization (uuid, not null)
+
+
+- conversations db
+
+uuid (uuid, primary key) | agents (list) | external_participants (list, not null) | created_at (datetime, not null) | updated_at (datetime, not null) | metadata (json) | origin (str, not null) | alma_internal_organization (uuid, not null)
+
+
+- events db
+
+uuid
+
+
+- humans db
+
+uuid
+
+
+- analytics db
+
+uuid
+

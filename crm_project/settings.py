@@ -144,6 +144,34 @@ EVENTS_CONVERSATION_ID_COLUMN = config('EVENTS_CONVERSATION_ID_COLUMN', default=
 EVENTS_TIMESTAMP_COLUMN = config('EVENTS_TIMESTAMP_COLUMN', default='datetime')
 EVENTS_ORIGIN_COLUMN = config('EVENTS_ORIGIN_COLUMN', default='dialogue')
 
+# Third PostgreSQL database for conversations
+# Try to get CONVERSATIONS_DATABASE_URL first (Railway format)
+conversations_database_url = config('CONVERSATIONS_DATABASE_URL', default=None)
+
+if conversations_database_url:
+    # Remove quotes if present
+    conversations_database_url = conversations_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if conversations_database_url and not conversations_database_url.startswith('${{'):
+        # Add conversations database to DATABASES
+        DATABASES['conversations'] = dj_database_url.parse(conversations_database_url)
+    else:
+        conversations_database_url = None
+
+if not conversations_database_url or conversations_database_url.startswith('${{'):
+    # Fall back to individual environment variables for conversations database
+    DATABASES['conversations'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('CONVERSATIONS_DB_NAME', default='conversations'),
+        'USER': config('CONVERSATIONS_DB_USER', default='postgres'),
+        'PASSWORD': config('CONVERSATIONS_DB_PASSWORD', default=''),
+        'HOST': config('CONVERSATIONS_DB_HOST', default='localhost'),
+        'PORT': config('CONVERSATIONS_DB_PORT', default='5432'),
+    }
+
+# Database routing for conversations models
+DATABASE_ROUTERS = ['conversations.db_router.ConversationsRouter']
+
 # MongoDB Configuration
 # Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
 # Check for MONGO_URL first, then fall back to MONGODB_URL

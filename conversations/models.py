@@ -5,6 +5,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 
 class Team(models.Model):
@@ -149,4 +150,49 @@ class UserProfile(models.Model):
             # Directors can change users between User and Manager
             return target_user_profile.role in ['User', 'Manager']
         return False
+
+
+class Conversation(models.Model):
+    """Conversation model stored in conversations database - read-only mapping to existing table"""
+    id = models.UUIDField(primary_key=True)
+    agents = ArrayField(models.CharField(max_length=255), blank=True)
+    external_participants = ArrayField(models.CharField(max_length=255))
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    metadata = models.JSONField(blank=True, null=True)
+    origin = models.CharField(max_length=255)
+    alma_internal_organization = models.UUIDField()
+    
+    class Meta:
+        db_table = 'conversations'
+        managed = False  # Table already exists, don't manage it
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        return f"Conversation {self.id}"
+
+
+class Message(models.Model):
+    """Message model stored in conversations database - read-only mapping to existing table"""
+    id = models.UUIDField(primary_key=True)
+    sender_uuid = models.UUIDField()
+    conversation_uuid = models.UUIDField()
+    content = models.TextField()
+    type = models.CharField(max_length=255)
+    link = models.TextField(blank=True, null=True)
+    channel = models.CharField(max_length=255)
+    subchannel = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    metadata = models.JSONField(blank=True, null=True)
+    origin = models.CharField(max_length=255)
+    alma_internal_organization = models.UUIDField()
+    
+    class Meta:
+        db_table = 'messages'
+        managed = False  # Table already exists, don't manage it
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Message {self.id} from {self.sender_uuid}"
 

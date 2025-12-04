@@ -1,38 +1,102 @@
 """
 Views for the conversations app
 """
+import uuid
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q, Count
 from datetime import datetime
-from .mongodb import (
-    get_conversations_collection,
-    get_all_sellers,
-    get_all_tags,
-    get_all_sales_stages,
-    get_uuid_to_email_mapping,
-    map_seller_to_email
-)
+from .models import Conversation, Message
 from .events_db import get_events_for_conversation
+
+
+def is_user_admin(user):
+    """Check if user is an admin"""
+    try:
+        profile = user.profile
+        return profile.is_admin()
+    except:
+        return False
+
+
+def get_user_organization(user):
+    """Get the user's alma_internal_organization from their profile and convert to UUID"""
+    try:
+        profile = user.profile
+        org_str = profile.alma_internal_organization
+        if not org_str:
+            return None
+        # Convert string to UUID for database comparison
+        try:
+            return uuid.UUID(str(org_str))
+        except (ValueError, AttributeError):
+            return None
+    except:
+        return None
+
+
+def conversation_to_dict(conv):
+    """Convert Conversation model instance to dictionary for template compatibility"""
+    return {
+        'id': str(conv.id),
+        'chatId': str(conv.id),  # Use UUID as chatId for now
+        'uuid': str(conv.id),
+        'lastUpdate': conv.updated_at,
+        'metadata': conv.metadata or {},
+        'envolvedSellers': conv.agents or [],
+        'envolvedSellersDisplay': conv.agents or [],  # Will be mapped later if needed
+        'agents': conv.agents or [],
+        'external_participants': conv.external_participants or [],
+        'mensagens': [],  # Will be populated separately
+        'created_at': conv.created_at,
+        'updated_at': conv.updated_at,
+        'origin': conv.origin,
+    }
+
+
+def message_to_dict(msg):
+    """Convert Message model instance to dictionary for template compatibility"""
+    return {
+        'id': str(msg.id),
+        'sender_uuid': str(msg.sender_uuid),
+        'conversation_uuid': str(msg.conversation_uuid),
+        'content': msg.content,
+        'type': msg.type,
+        'link': msg.link,
+        'channel': msg.channel,
+        'subchannel': msg.subchannel,
+        'messageTimestamp': msg.created_at,
+        'messageTimestamp_parsed': timezone.localtime(msg.created_at),
+        'created_at': msg.created_at,
+        'updated_at': msg.updated_at,
+        'metadata': msg.metadata or {},
+        'origin': msg.origin,
+    }
 
 
 @login_required
 def conversation_list(request):
     """List all conversations with filtering options"""
-    try:
-        collection = get_conversations_collection()
-    except Exception as e:
-        from django.http import HttpResponse
-        return HttpResponse(
-            f"<h1>MongoDB Connection Error</h1>"
-            f"<p>Unable to connect to MongoDB. Please check your MONGODB_URL environment variable.</p>"
-            f"<p>Error: {str(e)}</p>"
-            f"<p>Make sure MONGODB_URL, MONGODB_DB_NAME, and MONGODB_COLLECTION_NAME are set in Railway.</p>",
-            status=500
-        )
+    # Check if user is admin
+    is_admin = is_user_admin(request.user)
+    
+    # Get user's organization for filtering (only if not admin)
+    user_org = None
+    if not is_admin:
+        user_org = get_user_organization(request.user)
+        
+        if not user_org:
+            from django.http import HttpResponse
+            return HttpResponse(
+                f"<h1>Access Error</h1>"
+                f"<p>Your user profile does not have an alma_internal_organization set.</p>"
+                f"<p>Please contact an administrator.</p>",
+                status=403
+            )
     
     # Get filter parameters from request
     seller_id = request.GET.get('seller_id', '')
@@ -40,175 +104,115 @@ def conversation_list(request):
     tag = request.GET.get('tag', '')
     search = request.GET.get('search', '')
     
-    # Build MongoDB query
-    query = {}
-    and_conditions = []
+    # Start with base queryset - filter by organization only if not admin
+    if is_admin:
+        queryset = Conversation.objects.all()
+    else:
+        queryset = Conversation.objects.filter(alma_internal_organization=user_org)
     
+    # Apply filters
     if seller_id:
-        query['envolvedSellers'] = seller_id
+        # Filter conversations where agents list contains seller_id
+        queryset = queryset.filter(agents__contains=[seller_id])
     
     if sales_stage:
-        # Try exact match first, then regex for partial matches
-        query['metadata.salesStage'] = {'$regex': sales_stage, '$options': 'i'}
+        # Filter by sales stage in metadata JSON field
+        queryset = queryset.filter(metadata__salesStage__icontains=sales_stage)
     
     if tag:
-        # Search for tag in clientTagsInput (could be string or array)
-        tag_query = {
-            '$or': [
-                {'metadata.clientTagsInput': {'$regex': tag, '$options': 'i'}},
-                {'metadata.clientTagsInput': tag}
-            ]
-        }
-        and_conditions.append(tag_query)
+        # Filter by tag in metadata JSON field (could be string or array)
+        queryset = queryset.filter(
+            Q(metadata__clientTagsInput__icontains=tag) |
+            Q(metadata__clientTagsInput__contains=tag)
+        )
     
     if search:
-        # Search in client name, email, or chatId
-        search_query = {
-            '$or': [
-                {'metadata.clientName': {'$regex': search, '$options': 'i'}},
-                {'metadata.clientEmail': {'$regex': search, '$options': 'i'}},
-                {'chatId': {'$regex': search, '$options': 'i'}}
-            ]
-        }
-        and_conditions.append(search_query)
+        # Search in metadata fields (clientName, clientEmail) or UUID
+        queryset = queryset.filter(
+            Q(metadata__clientName__icontains=search) |
+            Q(metadata__clientEmail__icontains=search) |
+            Q(id__icontains=search)
+        )
     
-    # Combine all conditions
-    if and_conditions:
-        if query:
-            and_conditions.append(query)
-            query = {'$and': and_conditions}
-        else:
-            query = {'$and': and_conditions} if len(and_conditions) > 1 else and_conditions[0]
+    # Order by updated_at descending
+    queryset = queryset.order_by('-updated_at')
     
-    # Get conversations
-    # First, check total count for debugging
-    total_count = collection.count_documents(query)
+    # Get filter options from the filtered queryset
+    all_agents_set = set()
+    all_tags_set = set()
+    all_sales_stages_set = set()
     
-    # Get conversations from MongoDB
-    conversations_cursor = collection.find(query).sort('lastUpdate', -1)
-    conversations = list(conversations_cursor)
-    
-    # Get UUID to email mapping (once, use for all operations)
-    uuid_to_email_map = get_uuid_to_email_mapping()
-    
-    if settings.DEBUG:
-        print(f"UUID to email map loaded with {len(uuid_to_email_map)} entries")
-        if uuid_to_email_map:
-            sample_uuid = list(uuid_to_email_map.keys())[0]
-            print(f"Sample entry: {sample_uuid} -> {uuid_to_email_map[sample_uuid]}")
-    
-    # Convert ObjectId to string for each conversation (for template access)
-    # Also map seller UUIDs to emails and parse lastUpdate
-    for conv in conversations:
-        conv['id'] = str(conv['_id'])  # Add 'id' field that templates can access
+    # Sample conversations to get filter options (limit for performance)
+    sample_convs = queryset[:1000]
+    for conv in sample_convs:
+        # Collect agents
+        if conv.agents:
+            all_agents_set.update(conv.agents)
         
-        # Parse lastUpdate string to datetime object if it exists and convert to user timezone
-        if 'lastUpdate' in conv and conv['lastUpdate']:
-            try:
-                # Handle ISO format string: "2025-08-16T20:25:57.910+00:00"
-                if isinstance(conv['lastUpdate'], str):
-                    # Try parsing with timezone
-                    try:
-                        dt = datetime.fromisoformat(conv['lastUpdate'].replace('Z', '+00:00'))
-                    except ValueError:
-                        # Fallback to simpler format
-                        try:
-                            dt = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
-                        except ValueError:
-                            try:
-                                dt = datetime.strptime(conv['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
-                            except ValueError:
-                                # If all parsing fails, keep as string
-                                dt = None
-                    
-                    if dt:
-                        # Ensure it's timezone-aware (assume UTC if not specified)
-                        if dt.tzinfo is None:
-                            dt = timezone.make_aware(dt, timezone.utc)
-                        # Convert to user's timezone (or default timezone if not set)
-                        conv['lastUpdate'] = timezone.localtime(dt)
-            except Exception as e:
-                if settings.DEBUG:
-                    print(f"Error parsing lastUpdate for conversation {conv.get('chatId', 'unknown')}: {e}")
+        # Collect tags from metadata
+        metadata = conv.metadata or {}
+        tags = metadata.get('clientTagsInput')
+        if tags:
+            if isinstance(tags, str):
+                tag_list = [t.strip() for t in tags.split(',') if t.strip()]
+                all_tags_set.update(tag_list)
+            elif isinstance(tags, list):
+                all_tags_set.update([str(t) for t in tags if t])
         
-        # Map seller UUIDs to emails
-        if 'envolvedSellers' in conv and conv['envolvedSellers']:
-            conv['envolvedSellersDisplay'] = []
-            for seller in conv['envolvedSellers']:
-                mapped = map_seller_to_email(seller, uuid_to_email_map)
-                conv['envolvedSellersDisplay'].append(mapped)
-                if settings.DEBUG:
-                    if seller in uuid_to_email_map:
-                        print(f"Mapped {seller} -> {mapped}")
-                    else:
-                        print(f"No mapping for {seller}, using UUID")
-        else:
-            conv['envolvedSellersDisplay'] = []
+        # Collect sales stages
+        sales_stage = metadata.get('salesStage')
+        if sales_stage:
+            all_sales_stages_set.add(str(sales_stage))
     
-    # Get filter options (with error handling)
-    try:
-        all_sellers_raw = get_all_sellers()
-        # Map sellers to display names (email if available, otherwise UUID)
-        all_sellers = [
-            {
-                'uuid': seller,
-                'display': map_seller_to_email(seller, uuid_to_email_map)
-            }
-            for seller in all_sellers_raw
-        ]
-    except Exception as e:
-        all_sellers = []
-        if settings.DEBUG:
-            print(f"Error getting sellers: {e}")
+    all_sellers = [{'uuid': agent, 'display': agent} for agent in sorted(all_agents_set)]
+    all_tags = sorted(all_tags_set)
+    all_sales_stages = sorted(all_sales_stages_set)
     
-    try:
-        all_tags = get_all_tags()
-    except Exception as e:
-        all_tags = []
-        if settings.DEBUG:
-            print(f"Error getting tags: {e}")
-    
-    try:
-        all_sales_stages = get_all_sales_stages()
-    except Exception as e:
-        all_sales_stages = []
-        if settings.DEBUG:
-            print(f"Error getting sales stages: {e}")
-    
-    # Pagination - use a simple approach
+    # Pagination using Django's Paginator
     page_number = int(request.GET.get('page', 1))
     per_page = 20
-    total_pages = (len(conversations) + per_page - 1) // per_page if conversations else 0
+    paginator = Paginator(queryset, per_page)
     
-    # Calculate pagination slice
-    start_idx = (page_number - 1) * per_page
-    end_idx = start_idx + per_page
-    paginated_conversations = conversations[start_idx:end_idx]
+    try:
+        page_obj = paginator.page(page_number)
+    except:
+        page_obj = paginator.page(1)
+        page_number = 1
+    
+    # Convert model instances to dictionaries for template compatibility
+    conversations = []
+    for conv in page_obj:
+        conv_dict = conversation_to_dict(conv)
+        # Get message count for this conversation - skip org filter for admins
+        message_query = Message.objects.filter(conversation_uuid=conv.id)
+        if not is_admin:
+            message_query = message_query.filter(alma_internal_organization=user_org)
+        message_count = message_query.count()
+        conv_dict['mensagens'] = [None] * message_count  # Placeholder for count
+        conversations.append(conv_dict)
     
     # Debug info (only in DEBUG mode)
     debug_info = None
     if settings.DEBUG:
         debug_info = {
-            'query': str(query),
-            'total_count': total_count,
+            'total_count': queryset.count(),
             'conversations_list_length': len(conversations),
-            'paginated_length': len(paginated_conversations),
+            'paginated_length': len(conversations),
             'page_number': page_number,
-            'start_idx': start_idx,
-            'end_idx': end_idx,
-            'collection_name': settings.MONGODB_COLLECTION_NAME,
-            'db_name': settings.MONGODB_DB_NAME,
+            'total_pages': paginator.num_pages,
+            'user_organization': str(user_org) if user_org else None,
+            'is_admin': is_admin,
         }
     
     context = {
-        'conversations': paginated_conversations,
-        'all_conversations_count': len(conversations),
-        'total_pages': total_pages,
+        'conversations': conversations,
+        'all_conversations_count': paginator.count,
+        'total_pages': paginator.num_pages,
         'current_page': page_number,
-        'has_previous': page_number > 1,
-        'has_next': page_number < total_pages,
-        'previous_page': page_number - 1 if page_number > 1 else None,
-        'next_page': page_number + 1 if page_number < total_pages else None,
+        'has_previous': page_obj.has_previous(),
+        'has_next': page_obj.has_next(),
+        'previous_page': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         'all_sellers': all_sellers,
         'all_tags': all_tags,
         'all_sales_stages': all_sales_stages,
@@ -225,113 +229,63 @@ def conversation_list(request):
 @login_required
 def conversation_detail(request, conversation_id):
     """View detailed information about a specific conversation"""
-    try:
-        collection = get_conversations_collection()
-    except Exception as e:
-        from django.http import HttpResponse
-        return HttpResponse(
-            f"<h1>MongoDB Connection Error</h1>"
-            f"<p>Unable to connect to MongoDB. Please check your MONGODB_URL environment variable.</p>"
-            f"<p>Error: {str(e)}</p>"
-            f"<p>Make sure MONGODB_URL, MONGODB_DB_NAME, and MONGODB_COLLECTION_NAME are set in Railway.</p>",
-            status=500
-        )
+    # Check if user is admin
+    is_admin = is_user_admin(request.user)
     
-    # Get conversation by _id (ObjectId) or chatId
-    from bson import ObjectId
-    from bson.errors import InvalidId
-    conversation = None
+    # Get user's organization for filtering (only if not admin)
+    user_org = None
+    if not is_admin:
+        user_org = get_user_organization(request.user)
+        
+        if not user_org:
+            raise Http404("Your user profile does not have an alma_internal_organization set.")
     
     try:
-        # Try to find by ObjectId first
-        conversation = collection.find_one({'_id': ObjectId(conversation_id)})
-    except (InvalidId, ValueError):
-        # If that fails, try by chatId
-        conversation = collection.find_one({'chatId': conversation_id})
+        # Try to get conversation by UUID - skip org filter for admins
+        conversation_uuid = conversation_id
+        if is_admin:
+            conversation = Conversation.objects.get(id=conversation_uuid)
+        else:
+            conversation = Conversation.objects.get(
+                id=conversation_uuid,
+                alma_internal_organization=user_org
+            )
+    except (Conversation.DoesNotExist, ValueError):
+        raise Http404("Conversation not found or you don't have access to it")
     
-    if not conversation:
-        from django.http import Http404
-        raise Http404("Conversation not found")
+    # Get messages for this conversation - skip org filter for admins
+    messages_qs = Message.objects.filter(conversation_uuid=conversation.id)
+    if not is_admin:
+        messages_qs = messages_qs.filter(alma_internal_organization=user_org)
+    messages_qs = messages_qs.order_by('created_at')
     
-    # Sort messages by timestamp
-    messages = conversation.get('mensagens', [])
-    messages.sort(key=lambda x: x.get('messageTimestamp', ''))
+    # Convert messages to dictionaries
+    messages = [message_to_dict(msg) for msg in messages_qs]
     
-    # Parse message timestamps to datetime objects for display
-    for message in messages:
-        if 'messageTimestamp' in message and message['messageTimestamp']:
-            try:
-                timestamp_str = message['messageTimestamp']
-                dt = None
-                if isinstance(timestamp_str, str):
-                    # Try parsing ISO format
-                    try:
-                        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-                    except ValueError:
-                        try:
-                            dt = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S.%f%z')
-                        except ValueError:
-                            try:
-                                dt = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S%z')
-                            except ValueError:
-                                dt = None
-                elif isinstance(timestamp_str, datetime):
-                    # Already a datetime object
-                    dt = timestamp_str
-                
-                if dt:
-                    # Ensure it's timezone-aware
-                    if dt.tzinfo is None:
-                        dt = timezone.make_aware(dt, timezone.utc)
-                    # Convert to user's timezone
-                    message['messageTimestamp_parsed'] = timezone.localtime(dt)
-            except Exception as e:
-                if settings.DEBUG:
-                    print(f"Error parsing message timestamp: {e}")
+    # Convert conversation to dictionary
+    conv_dict = conversation_to_dict(conversation)
+    conv_dict['lastUpdate'] = conversation.updated_at
     
-    # Convert ObjectId to string for template (add 'id' field that templates can access)
-    conversation['id'] = str(conversation['_id'])
+    # Get metadata
+    metadata = conversation.metadata or {}
     
-    # Parse lastUpdate string to datetime object if it exists
-    if 'lastUpdate' in conversation and conversation['lastUpdate']:
-        try:
-            # Handle ISO format string: "2025-08-16T20:25:57.910+00:00"
-            if isinstance(conversation['lastUpdate'], str):
-                # Try parsing with timezone
-                try:
-                    conversation['lastUpdate'] = datetime.fromisoformat(conversation['lastUpdate'].replace('Z', '+00:00'))
-                except ValueError:
-                    # Fallback to simpler format
-                    try:
-                        conversation['lastUpdate'] = datetime.strptime(conversation['lastUpdate'], '%Y-%m-%dT%H:%M:%S.%f%z')
-                    except ValueError:
-                        try:
-                            conversation['lastUpdate'] = datetime.strptime(conversation['lastUpdate'], '%Y-%m-%dT%H:%M:%S%z')
-                        except ValueError:
-                            # If all parsing fails, keep as string
-                            pass
-        except Exception as e:
-            if settings.DEBUG:
-                print(f"Error parsing lastUpdate for conversation {conversation.get('chatId', 'unknown')}: {e}")
+    # Normalize tags - ensure it's a list
+    tags = metadata.get('clientTagsInput')
+    if tags and isinstance(tags, str):
+        metadata['clientTagsInput'] = [tag.strip() for tag in tags.split(',') if tag.strip()]
+    elif not tags:
+        metadata['clientTagsInput'] = []
     
-    # Get UUID to email mapping and map seller UUIDs to emails
-    uuid_to_email_map = get_uuid_to_email_mapping()
-    envolved_sellers = conversation.get('envolvedSellers', [])
-    envolved_sellers_display = []
-    for seller in envolved_sellers:
-        mapped = map_seller_to_email(seller, uuid_to_email_map)
-        envolved_sellers_display.append(mapped)
-        if settings.DEBUG and seller in uuid_to_email_map:
-            print(f"Mapped {seller} -> {mapped}")
+    # Get agents/sellers for display
+    envolved_sellers_display = conversation.agents or []
     
     # Fetch events for this conversation from the events database
-    chat_id = conversation.get('chatId', conversation_id)
+    chat_id = str(conversation.id)
     events = get_events_for_conversation(chat_id)
     
     # Parse event timestamps to datetime objects for display
     for event in events:
         timestamp_col = getattr(settings, 'EVENTS_TIMESTAMP_COLUMN', 'datetime')
-        # Handle both 'datetime' column name and any timestamp field
         datetime_value = event.get('datetime') or event.get(timestamp_col)
         
         if datetime_value:
@@ -357,30 +311,18 @@ def conversation_detail(request, conversation_id):
                                     except ValueError:
                                         dt = None
                 elif isinstance(datetime_value, datetime):
-                    # Already a datetime object
                     dt = datetime_value
                 
                 if dt:
-                    # Ensure it's timezone-aware
                     if dt.tzinfo is None:
                         dt = timezone.make_aware(dt, timezone.utc)
-                    # Convert to user's timezone
                     event['datetime_parsed'] = timezone.localtime(dt)
             except Exception as e:
                 if settings.DEBUG:
                     print(f"Error parsing event timestamp: {e}")
     
-    # Normalize tags - convert string to list if needed
-    metadata = conversation.get('metadata', {})
-    tags = metadata.get('clientTagsInput')
-    if tags and isinstance(tags, str):
-        # If tags is a string, split by comma
-        metadata['clientTagsInput'] = [tag.strip() for tag in tags.split(',') if tag.strip()]
-    elif not tags:
-        metadata['clientTagsInput'] = []
-    
     context = {
-        'conversation': conversation,
+        'conversation': conv_dict,
         'messages': messages,
         'metadata': metadata,
         'envolved_sellers': envolved_sellers_display,
@@ -388,5 +330,3 @@ def conversation_detail(request, conversation_id):
     }
     
     return render(request, 'conversations/detail.html', context)
-
-
