@@ -2,6 +2,7 @@
 Views for the conversations app
 """
 import uuid
+import json
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.http import JsonResponse, Http404
@@ -41,15 +42,26 @@ def get_user_organization(user):
 
 def conversation_to_dict(conv):
     """Convert Conversation model instance to dictionary for template compatibility"""
+    # Ensure agents is a list
+    agents = conv.agents or []
+    if isinstance(agents, str):
+        # If agents is a string, try to parse it
+        try:
+            agents = json.loads(agents)
+            if not isinstance(agents, list):
+                agents = []
+        except:
+            agents = []
+    
     return {
         'id': str(conv.id),
         'chatId': str(conv.id),  # Use UUID as chatId for now
         'uuid': str(conv.id),
         'lastUpdate': conv.updated_at,
         'metadata': conv.metadata or {},
-        'envolvedSellers': conv.agents or [],
-        'envolvedSellersDisplay': conv.agents or [],  # Will be mapped later if needed
-        'agents': conv.agents or [],
+        'envolvedSellers': agents,
+        'envolvedSellersDisplay': agents,
+        'agents': agents,
         'external_participants': conv.external_participants or [],
         'mensagens': [],  # Will be populated separately
         'created_at': conv.created_at,
@@ -60,6 +72,20 @@ def conversation_to_dict(conv):
 
 def message_to_dict(msg):
     """Convert Message model instance to dictionary for template compatibility"""
+    # Handle datetime - make timezone-aware if needed
+    created_at = msg.created_at
+    if created_at and created_at.tzinfo is None:
+        # If naive datetime, assume it's in UTC
+        created_at = timezone.make_aware(created_at, timezone.utc)
+    
+    message_timestamp_parsed = None
+    if created_at:
+        try:
+            message_timestamp_parsed = timezone.localtime(created_at)
+        except (ValueError, AttributeError):
+            # Fallback to the original datetime if localtime fails
+            message_timestamp_parsed = created_at
+    
     return {
         'id': str(msg.id),
         'sender_uuid': str(msg.sender_uuid),
@@ -70,7 +96,7 @@ def message_to_dict(msg):
         'channel': msg.channel,
         'subchannel': msg.subchannel,
         'messageTimestamp': msg.created_at,
-        'messageTimestamp_parsed': timezone.localtime(msg.created_at),
+        'messageTimestamp_parsed': message_timestamp_parsed,
         'created_at': msg.created_at,
         'updated_at': msg.updated_at,
         'metadata': msg.metadata or {},
@@ -145,9 +171,42 @@ def conversation_list(request):
     # Sample conversations to get filter options (limit for performance)
     sample_convs = queryset[:1000]
     for conv in sample_convs:
-        # Collect agents
-        if conv.agents:
-            all_agents_set.update(conv.agents)
+        # Collect agents - properly handle the array
+        agents = conv.agents
+        if agents:
+            # ArrayField should return a list, but handle edge cases
+            if isinstance(agents, list):
+                # Normal case: it's a list
+                for agent in agents:
+                    if agent and str(agent).strip():  # Only add non-empty agents
+                        all_agents_set.add(str(agent).strip())
+            elif isinstance(agents, (tuple, set)):
+                # Handle other iterable types
+                for agent in agents:
+                    if agent and str(agent).strip():
+                        all_agents_set.add(str(agent).strip())
+            elif isinstance(agents, str):
+                # If it's a string, it might be a PostgreSQL array text representation
+                # Try to parse it or handle as comma-separated
+                if agents.startswith('{') and agents.endswith('}'):
+                    # PostgreSQL array format: {item1,item2}
+                    agents_str = agents[1:-1]  # Remove curly braces
+                    agent_list = [a.strip().strip('"').strip("'") for a in agents_str.split(',') if a.strip()]
+                    for agent in agent_list:
+                        if agent:
+                            all_agents_set.add(agent)
+                else:
+                    # Try JSON parsing
+                    try:
+                        parsed = json.loads(agents)
+                        if isinstance(parsed, list):
+                            for agent in parsed:
+                                if agent:
+                                    all_agents_set.add(str(agent).strip())
+                    except:
+                        # Last resort: treat as single value if not empty
+                        if agents.strip():
+                            all_agents_set.add(agents.strip())
         
         # Collect tags from metadata
         metadata = conv.metadata or {}
@@ -275,8 +334,16 @@ def conversation_detail(request, conversation_id):
     elif not tags:
         metadata['clientTagsInput'] = []
     
-    # Get agents/sellers for display
-    envolved_sellers_display = conversation.agents or []
+    # Get agents/sellers for display - ensure it's a list
+    agents = conversation.agents or []
+    if isinstance(agents, str):
+        try:
+            agents = json.loads(agents)
+            if not isinstance(agents, list):
+                agents = []
+        except:
+            agents = []
+    envolved_sellers_display = agents
     
     # Fetch events for this conversation from the events database
     chat_id = str(conversation.id)
