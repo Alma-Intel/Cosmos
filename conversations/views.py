@@ -354,9 +354,9 @@ def conversation_detail(request, conversation_id):
             agents = []
     envolved_sellers_display = agents
     
-    # Fetch events for this conversation from the events database
-    chat_id = str(conversation.id)
-    events = get_events_for_conversation(chat_id)
+    # Fetch events for this conversation from the events database using conversation UUID
+    conversation_uuid = str(conversation.id)
+    events = get_events_for_conversation(conversation_uuid)
     
     # Parse event timestamps to datetime objects for display
     for event in events:

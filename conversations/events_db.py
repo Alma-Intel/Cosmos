@@ -7,13 +7,13 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 
-def get_events_for_conversation(conversation_id):
+def get_events_for_conversation(conversation_uuid):
     """
-    Fetch all events for a given conversation from the events database.
+    Fetch all events for a given conversation from the events database using the conversation UUID.
     Returns events sorted by timestamp (most recent first).
     
     Args:
-        conversation_id: The conversation ID (chatId) to fetch events for
+        conversation_uuid: The conversation UUID to fetch events for (from conversations table)
         
     Returns:
         List of event dictionaries, sorted by timestamp (most recent first)
@@ -50,7 +50,9 @@ def get_events_for_conversation(conversation_id):
         """
         
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (conversation_id,))
+        # Convert UUID to string if needed for the query
+        conversation_uuid_str = str(conversation_uuid)
+        cursor.execute(query, (conversation_uuid_str,))
         
         events = cursor.fetchall()
         
@@ -61,7 +63,7 @@ def get_events_for_conversation(conversation_id):
         conn.close()
         
         if settings.DEBUG:
-            print(f"Fetched {len(events_list)} events for conversation {conversation_id}")
+            print(f"Fetched {len(events_list)} events for conversation UUID {conversation_uuid_str}")
         
         return events_list
         
