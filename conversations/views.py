@@ -86,6 +86,9 @@ def message_to_dict(msg):
             # Fallback to the original datetime if localtime fails
             message_timestamp_parsed = created_at
     
+    # Get metadata for additional fields
+    metadata = msg.metadata or {}
+    
     return {
         'id': str(msg.id),
         'sender_uuid': str(msg.sender_uuid),
@@ -99,8 +102,14 @@ def message_to_dict(msg):
         'messageTimestamp_parsed': message_timestamp_parsed,
         'created_at': msg.created_at,
         'updated_at': msg.updated_at,
-        'metadata': msg.metadata or {},
+        'metadata': metadata,
         'origin': msg.origin,
+        # Template compatibility fields
+        'messageSender': str(msg.sender_uuid),  # Template expects messageSender
+        'messageType': msg.type or '',  # Template expects messageType
+        'messageContent': msg.content or '',  # Template expects messageContent
+        'messageContent_en': metadata.get('content_en', ''),  # Optional English content
+        'messageFormat': metadata.get('format'),  # Optional format field
     }
 
 
