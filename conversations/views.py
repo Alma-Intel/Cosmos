@@ -14,6 +14,15 @@ from .models import Conversation, Message
 from .events_db import get_events_for_conversation
 
 
+def is_user_admin(user):
+    """Check if user is an admin"""
+    try:
+        profile = user.profile
+        return profile.is_admin()
+    except:
+        return False
+
+
 def get_user_organization(user):
     """Get the user's alma_internal_organization from their profile and convert to UUID"""
     try:
@@ -72,17 +81,22 @@ def message_to_dict(msg):
 @login_required
 def conversation_list(request):
     """List all conversations with filtering options"""
-    # Get user's organization for filtering
-    user_org = get_user_organization(request.user)
+    # Check if user is admin
+    is_admin = is_user_admin(request.user)
     
-    if not user_org:
-        from django.http import HttpResponse
-        return HttpResponse(
-            f"<h1>Access Error</h1>"
-            f"<p>Your user profile does not have an alma_internal_organization set.</p>"
-            f"<p>Please contact an administrator.</p>",
-            status=403
-        )
+    # Get user's organization for filtering (only if not admin)
+    user_org = None
+    if not is_admin:
+        user_org = get_user_organization(request.user)
+        
+        if not user_org:
+            from django.http import HttpResponse
+            return HttpResponse(
+                f"<h1>Access Error</h1>"
+                f"<p>Your user profile does not have an alma_internal_organization set.</p>"
+                f"<p>Please contact an administrator.</p>",
+                status=403
+            )
     
     # Get filter parameters from request
     seller_id = request.GET.get('seller_id', '')
@@ -90,8 +104,11 @@ def conversation_list(request):
     tag = request.GET.get('tag', '')
     search = request.GET.get('search', '')
     
-    # Start with base queryset filtered by organization
-    queryset = Conversation.objects.filter(alma_internal_organization=user_org)
+    # Start with base queryset - filter by organization only if not admin
+    if is_admin:
+        queryset = Conversation.objects.all()
+    else:
+        queryset = Conversation.objects.filter(alma_internal_organization=user_org)
     
     # Apply filters
     if seller_id:
@@ -166,11 +183,11 @@ def conversation_list(request):
     conversations = []
     for conv in page_obj:
         conv_dict = conversation_to_dict(conv)
-        # Get message count for this conversation
-        message_count = Message.objects.filter(
-            conversation_uuid=conv.id,
-            alma_internal_organization=user_org
-        ).count()
+        # Get message count for this conversation - skip org filter for admins
+        message_query = Message.objects.filter(conversation_uuid=conv.id)
+        if not is_admin:
+            message_query = message_query.filter(alma_internal_organization=user_org)
+        message_count = message_query.count()
         conv_dict['mensagens'] = [None] * message_count  # Placeholder for count
         conversations.append(conv_dict)
     
@@ -211,27 +228,35 @@ def conversation_list(request):
 @login_required
 def conversation_detail(request, conversation_id):
     """View detailed information about a specific conversation"""
-    # Get user's organization for filtering
-    user_org = get_user_organization(request.user)
+    # Check if user is admin
+    is_admin = is_user_admin(request.user)
     
-    if not user_org:
-        raise Http404("Your user profile does not have an alma_internal_organization set.")
+    # Get user's organization for filtering (only if not admin)
+    user_org = None
+    if not is_admin:
+        user_org = get_user_organization(request.user)
+        
+        if not user_org:
+            raise Http404("Your user profile does not have an alma_internal_organization set.")
     
     try:
-        # Try to get conversation by UUID
+        # Try to get conversation by UUID - skip org filter for admins
         conversation_uuid = conversation_id
-        conversation = Conversation.objects.get(
-            id=conversation_uuid,
-            alma_internal_organization=user_org
-        )
+        if is_admin:
+            conversation = Conversation.objects.get(id=conversation_uuid)
+        else:
+            conversation = Conversation.objects.get(
+                id=conversation_uuid,
+                alma_internal_organization=user_org
+            )
     except (Conversation.DoesNotExist, ValueError):
         raise Http404("Conversation not found or you don't have access to it")
     
-    # Get messages for this conversation
-    messages_qs = Message.objects.filter(
-        conversation_uuid=conversation.id,
-        alma_internal_organization=user_org
-    ).order_by('created_at')
+    # Get messages for this conversation - skip org filter for admins
+    messages_qs = Message.objects.filter(conversation_uuid=conversation.id)
+    if not is_admin:
+        messages_qs = messages_qs.filter(alma_internal_organization=user_org)
+    messages_qs = messages_qs.order_by('created_at')
     
     # Convert messages to dictionaries
     messages = [message_to_dict(msg) for msg in messages_qs]
