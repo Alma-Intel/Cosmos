@@ -154,7 +154,7 @@ class UserProfile(models.Model):
 
 class Conversation(models.Model):
     """Conversation model stored in conversations database - read-only mapping to existing table"""
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, db_column='uuid')
     agents = ArrayField(models.CharField(max_length=255), blank=True)
     external_participants = ArrayField(models.CharField(max_length=255))
     created_at = models.DateTimeField()
@@ -174,7 +174,7 @@ class Conversation(models.Model):
 
 class Message(models.Model):
     """Message model stored in conversations database - read-only mapping to existing table"""
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, db_column='uuid')
     sender_uuid = models.UUIDField()
     conversation_uuid = models.UUIDField()
     content = models.TextField()
