@@ -22,3 +22,75 @@ uuid
 
 uuid
 
+
+- Events DB
+
+uuid (uuid, primary key) | conversation_uuid (uuid, not null) | agent_uuid (uuid, not null) | created_at (datetime, not null) | scheduled_to (datetime, optional) | event_type (str, not null) | event_subtype (str, optional) | json (json, optional)
+
+
+EVENT TYPE:
+
+
+1. SalesStage Change
+
+event_string: "SALES_STAGE_CHANGE"
+json: {
+    "OLD_STAGE": "",
+    "NEW_STAGE": ""
+}
+
+
+2. FOLLOWUP_DETECTION
+
+event_string: "FOLLOWUP_DETECTION"
+json: {
+    "FOLLOWUP_TRY": "",
+    "FOLLOWUP_TIME": "",
+    "FOLLOWUP_TYPE": ""
+}
+
+
+3. Objection Detection 
+
+event_string: "OBJECTION_DETECTION"
+json: {
+    "OBJECTION_TYPE": ""
+}
+
+
+4. Sale Made
+
+event_string: "SALE_MADE"
+json: {
+    "PRODUCT": "",
+    "PRICE": "",
+    "DISCOUNT": ""
+}
+
+
+5. Meeting Scheduled
+
+event_string: "MEETING_SCHEDULED"
+json: {
+    "TIME_SCHEDULED": "",
+    "MEETING_CHANNEL": "",
+    "LINK": ""
+}
+
+
+5. Meeting Done
+
+event_string: "MEETING_DONE"
+json: {
+    "ATTENDED": "",
+    "DURATION": "",
+    "TRANSCRIPTION": "",
+    "VIDEO": ""
+}
+
+6. CUSTOMER_INFORMATION_DETECTION
+event_string: "MEETING_DONE"
+sub_event_string: ("NAME", "AGE", "GRADUATION_INSTITUTION", "DESIRED_INSTITUTION", "COURSE_INTENDED", "EXAM_YEAR", "EXSTUDENT")
+json: {
+
+}
