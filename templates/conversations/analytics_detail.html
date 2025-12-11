@@ -13,7 +13,27 @@
                 ← Back to Analytics Dashboard
             </a>
         </div>
+        {% if time_window_options %}
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="time_window_filter" style="font-weight: 600; color: #555; font-size: 0.9rem;">Time Window:</label>
+            <select id="time_window_filter" onchange="window.location.href='?time_window=' + this.value + '{{ time_window_query_string }}'" 
+                    style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; background: white; cursor: pointer;">
+                {% for option in time_window_options %}
+                <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
     </div>
+    {% if time_window %}
+    <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #e3f2fd; border-radius: 4px; color: #1976d2; font-size: 0.9rem;">
+        Showing data for: <strong>
+        {% for option in time_window_options %}
+            {% if option.selected %}{{ option.label }}{% endif %}
+        {% endfor %}
+        </strong>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Summary Statistics -->

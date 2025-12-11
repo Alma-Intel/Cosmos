@@ -27,6 +27,7 @@ urlpatterns = [
     path('analytics/friction-heuristics/', views_other.analytics_friction_heuristics, name='analytics_friction_heuristics'),
     path('analytics/temporal-heat/', views_other.analytics_temporal_heat, name='analytics_temporal_heat'),
     path('analytics/churn-risk/', views_other.analytics_churn_risk, name='analytics_churn_risk'),
+    path('analytics/critical-cases/', views_other.analytics_critical_cases, name='analytics_critical_cases'),
     path('analytics/sales-velocity/', views_other.analytics_sales_velocity, name='analytics_sales_velocity'),
     path('analytics/segmentation-matrix/', views_other.analytics_segmentation_matrix, name='analytics_segmentation_matrix'),
     path('profile/', views_other.profile, name='profile'),

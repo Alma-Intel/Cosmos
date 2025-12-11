@@ -431,11 +431,23 @@ def analytics(request):
     from .analytics_utils import (
         get_cx_volumetrics, get_friction_heuristics, get_temporal_heat,
         get_churn_risk_monitor, get_sales_velocity, get_segmentation_matrix,
-        get_summary_stats
+        get_summary_stats, get_clients_analysis
     )
+    
+    # Get critical cases count
+    clients, metadata, global_analyses = get_clients_analysis()
+    critical_cases_count = 0
+    if global_analyses and 'critical_cases' in global_analyses:
+        critical_cases_count = len(global_analyses.get('critical_cases', []))
     
     # Get summary stats for each dataset
     datasets = {
+        'critical_cases': {
+            'name': 'Critical Cases',
+            'description': f'High-risk clients requiring immediate attention ({critical_cases_count} cases)',
+            'stats': {'row_count': critical_cases_count, 'column_count': 0, 'columns': []},
+            'url': 'analytics_critical_cases'
+        },
         'cx_volumetrics': {
             'name': 'CX Volumetrics',
             'description': 'Manager-Client pairs with interaction velocity, neediness ratio, load metrics',
@@ -646,10 +658,21 @@ def analytics_temporal_heat(request):
 
 @login_required
 def analytics_churn_risk(request):
-    """Churn Risk Monitor analytics view with sorting - uses clients_analysis.json"""
-    from .analytics_utils import get_clients_analysis, get_data_slice, get_summary_stats
+    """Churn Risk Monitor analytics view with sorting and time window filtering - uses clients_analysis_20251211_055217.json"""
+    from .analytics_utils import get_clients_analysis, get_data_slice, get_summary_stats, transform_clients_for_time_window
     
-    data, metadata = get_clients_analysis()
+    clients, metadata, global_analyses = get_clients_analysis()
+    
+    # Get time window filter (default to last_6_months)
+    time_window = request.GET.get('time_window', 'last_6_months')
+    available_time_windows = metadata.get('time_windows_available', ['last_week', 'last_month', 'last_3_months', 'last_6_months', 'last_year'])
+    
+    # Validate time window
+    if time_window not in available_time_windows:
+        time_window = 'last_6_months'
+    
+    # Transform clients data to show metrics from selected time window
+    data = transform_clients_for_time_window(clients, time_window) if clients else []
     stats = get_summary_stats(data)
     
     # Get sorting parameters
@@ -711,8 +734,10 @@ def analytics_churn_risk(request):
         paginated_data = []
         total_pages = 0
     
-    # Build query string for pagination (preserve sort parameters)
+    # Build query string for pagination (preserve sort and time_window parameters)
     query_params = []
+    if time_window:
+        query_params.append(f'time_window={time_window}')
     if sort_column:
         query_params.append(f'sort={sort_column}')
     if sort_order:
@@ -723,11 +748,40 @@ def analytics_churn_risk(request):
     else:
         query_string = ''
     
+    # Build query string for time window filter (preserve sort parameters)
+    time_window_query_params = []
+    if sort_column:
+        time_window_query_params.append(f'sort={sort_column}')
+    if sort_order and sort_order != 'asc':
+        time_window_query_params.append(f'order={sort_order}')
+    time_window_query_string = '&'.join(time_window_query_params)
+    if time_window_query_string:
+        time_window_query_string = '&' + time_window_query_string
+    else:
+        time_window_query_string = ''
+    
+    # Create time window options for dropdown
+    time_window_options = []
+    window_labels = {
+        'last_week': 'Last Week',
+        'last_month': 'Last Month',
+        'last_3_months': 'Last 3 Months',
+        'last_6_months': 'Last 6 Months',
+        'last_year': 'Last Year'
+    }
+    for window in available_time_windows:
+        time_window_options.append({
+            'value': window,
+            'label': window_labels.get(window, window.replace('_', ' ').title()),
+            'selected': window == time_window
+        })
+    
     context = {
         'title': 'Client Analysis & Risk Monitor',
         'data': paginated_data,
         'stats': stats,
         'metadata': metadata,
+        'global_analyses': global_analyses,
         'current_page': page,
         'total_pages': total_pages,
         'has_previous': page > 1,
@@ -737,6 +791,9 @@ def analytics_churn_risk(request):
         'sort_column': sort_column,
         'sort_order': sort_order,
         'query_string': query_string,
+        'time_window_query_string': time_window_query_string,
+        'time_window': time_window,
+        'time_window_options': time_window_options,
     }
     return render(request, 'conversations/analytics_detail.html', context)
 
@@ -811,6 +868,116 @@ def analytics_segmentation_matrix(request):
         'next_page': page + 1 if page < total_pages else None,
     }
     return render(request, 'conversations/analytics_detail.html', context)
+
+
+@login_required
+def analytics_critical_cases(request):
+    """Critical Cases analytics view - displays high-risk clients requiring immediate attention"""
+    from .analytics_utils import get_clients_analysis, get_summary_stats
+    
+    clients, metadata, global_analyses = get_clients_analysis()
+    critical_cases = global_analyses.get('critical_cases', []) if global_analyses else []
+    
+    # Get sorting parameters
+    sort_column = request.GET.get('sort', '')
+    sort_order = request.GET.get('order', 'asc')  # 'asc' or 'desc'
+    
+    # Sort data if sort column is specified
+    if critical_cases and len(critical_cases) > 0 and sort_column:
+        if sort_column in critical_cases[0].keys():
+            # Helper function to determine if value is numeric
+            def is_numeric(value):
+                if value is None:
+                    return False
+                if isinstance(value, list):
+                    return False
+                if isinstance(value, dict):
+                    return False
+                try:
+                    float(str(value))
+                    return True
+                except (ValueError, TypeError):
+                    return False
+            
+            # Check if all values in column are numeric
+            sample_values = [record.get(sort_column) for record in critical_cases[:10] 
+                           if record.get(sort_column) is not None 
+                           and not isinstance(record.get(sort_column), (list, dict))]
+            all_numeric = all(is_numeric(v) for v in sample_values) if sample_values else False
+            
+            if all_numeric:
+                # Sort as numeric
+                def numeric_key(x):
+                    val = x.get(sort_column)
+                    if val is None or isinstance(val, (list, dict)):
+                        return float('-inf') if sort_order == 'desc' else float('inf')
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        return 0
+                critical_cases = sorted(critical_cases, key=numeric_key, reverse=(sort_order == 'desc'))
+            else:
+                # Sort as string (handle lists by joining them)
+                def string_key(x):
+                    val = x.get(sort_column)
+                    if val is None:
+                        return '' if sort_order == 'desc' else 'zzz'
+                    if isinstance(val, list):
+                        return ', '.join(str(v) for v in val).lower()
+                    if isinstance(val, dict):
+                        return str(val).lower()
+                    return str(val).lower()
+                critical_cases = sorted(critical_cases, key=string_key, reverse=(sort_order == 'desc'))
+    
+    # Get pagination parameters
+    page = int(request.GET.get('page', 1))
+    per_page = 20  # Fewer per page since these are detailed cases
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    
+    # Get data for current page
+    if critical_cases and len(critical_cases) > 0:
+        paginated_data = critical_cases[start_idx:end_idx]
+        total_pages = (len(critical_cases) + per_page - 1) // per_page
+    else:
+        paginated_data = []
+        total_pages = 0
+    
+    # Build query string for pagination (preserve sort parameters)
+    query_params = []
+    if sort_column:
+        query_params.append(f'sort={sort_column}')
+    if sort_order:
+        query_params.append(f'order={sort_order}')
+    query_string = '&'.join(query_params)
+    if query_string:
+        query_string = '&' + query_string
+    else:
+        query_string = ''
+    
+    # Get summary stats
+    stats = {
+        'row_count': len(critical_cases) if critical_cases else 0,
+        'column_count': len(critical_cases[0].keys()) if critical_cases and len(critical_cases) > 0 else 0,
+        'columns': list(critical_cases[0].keys()) if critical_cases and len(critical_cases) > 0 else []
+    }
+    
+    context = {
+        'title': 'Critical Cases',
+        'data': paginated_data,
+        'stats': stats,
+        'metadata': metadata,
+        'current_page': page,
+        'total_pages': total_pages,
+        'has_previous': page > 1,
+        'has_next': page < total_pages,
+        'previous_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < total_pages else None,
+        'sort_column': sort_column,
+        'sort_order': sort_order,
+        'query_string': query_string,
+    }
+    return render(request, 'conversations/analytics_critical_cases.html', context)
 
 
 @login_required

@@ -55,20 +55,82 @@ def get_churn_risk_monitor():
     return load_json_file('gold_churn_risk_monitor_20251126.json')
 
 def get_clients_analysis():
-    """Load clients analysis data"""
-    file_path = GOLD_DATA_DIR / 'clients_analysis.json'
+    """Load clients analysis data from the newest JSON file"""
+    file_path = GOLD_DATA_DIR / 'clients_analysis_20251211_055217.json'
     
     if not file_path.exists():
-        return None, None
+        return None, None, None
     
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        # Return both the clients array and metadata
-        return data.get('clients', []), data.get('metadata', {})
+        # Return clients array, metadata, and global_analyses
+        return data.get('clients', []), data.get('metadata', {}), data.get('global_analyses', {})
     except Exception as e:
-        print(f"Error loading clients_analysis.json: {e}")
-        return None, None
+        print(f"Error loading clients_analysis_20251211_055217.json: {e}")
+        return None, None, None
+
+
+def transform_clients_for_time_window(clients, time_window='last_6_months'):
+    """
+    Transform client data to show metrics from a specific time window.
+    
+    Args:
+        clients: List of client dictionaries with time_windows
+        time_window: One of 'last_week', 'last_month', 'last_3_months', 'last_6_months', 'last_year'
+    
+    Returns:
+        List of transformed client dictionaries with flattened time window metrics
+    """
+    if not clients:
+        return []
+    
+    transformed = []
+    for client in clients:
+        # Get basic client info
+        transformed_client = {
+            'client_name': client.get('client_name', ''),
+            'legal_name': client.get('legal_name', ''),
+            'cnpj': client.get('cnpj', ''),
+            'total_interactions': client.get('total_interactions', 0),
+        }
+        
+        # Get time window data
+        time_windows = client.get('time_windows', {})
+        window_data = time_windows.get(time_window, {})
+        
+        if window_data:
+            # Flatten time window metrics
+            transformed_client.update({
+                'interactions': window_data.get('interactions', 0),
+                'sentiment': window_data.get('sentiment'),
+                'trend': window_data.get('trend'),
+                'topics': window_data.get('topics', []),
+                'days_since_last_interaction': window_data.get('days_since_last_interaction'),
+                'risk_level': window_data.get('risk_level'),
+                'date_range_start': window_data.get('date_range', {}).get('start'),
+                'date_range_end': window_data.get('date_range', {}).get('end'),
+                'window_name': window_data.get('window_name', time_window),
+                'window_label': window_data.get('window_label', time_window.replace('_', ' ').title()),
+            })
+        else:
+            # If no data for this window, set defaults
+            transformed_client.update({
+                'interactions': 0,
+                'sentiment': None,
+                'trend': None,
+                'topics': [],
+                'days_since_last_interaction': None,
+                'risk_level': None,
+                'date_range_start': None,
+                'date_range_end': None,
+                'window_name': time_window,
+                'window_label': time_window.replace('_', ' ').title(),
+            })
+        
+        transformed.append(transformed_client)
+    
+    return transformed
 
 
 def get_sales_velocity():
