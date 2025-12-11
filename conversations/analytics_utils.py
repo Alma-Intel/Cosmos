@@ -100,7 +100,7 @@ def transform_clients_for_time_window(clients, time_window='last_6_months'):
         window_data = time_windows.get(time_window, {})
         
         if window_data:
-            # Flatten time window metrics
+            # Flatten time window metrics (excluding date_range and window info)
             transformed_client.update({
                 'interactions': window_data.get('interactions', 0),
                 'sentiment': window_data.get('sentiment'),
@@ -108,10 +108,6 @@ def transform_clients_for_time_window(clients, time_window='last_6_months'):
                 'topics': window_data.get('topics', []),
                 'days_since_last_interaction': window_data.get('days_since_last_interaction'),
                 'risk_level': window_data.get('risk_level'),
-                'date_range_start': window_data.get('date_range', {}).get('start'),
-                'date_range_end': window_data.get('date_range', {}).get('end'),
-                'window_name': window_data.get('window_name', time_window),
-                'window_label': window_data.get('window_label', time_window.replace('_', ' ').title()),
             })
         else:
             # If no data for this window, set defaults
@@ -122,10 +118,6 @@ def transform_clients_for_time_window(clients, time_window='last_6_months'):
                 'topics': [],
                 'days_since_last_interaction': None,
                 'risk_level': None,
-                'date_range_start': None,
-                'date_range_end': None,
-                'window_name': time_window,
-                'window_label': time_window.replace('_', ' ').title(),
             })
         
         transformed.append(transformed_client)
