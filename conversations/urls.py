@@ -30,6 +30,7 @@ urlpatterns = [
     path('analytics/critical-cases/', views_other.analytics_critical_cases, name='analytics_critical_cases'),
     path('analytics/sales-velocity/', views_other.analytics_sales_velocity, name='analytics_sales_velocity'),
     path('analytics/segmentation-matrix/', views_other.analytics_segmentation_matrix, name='analytics_segmentation_matrix'),
+    path('analytics/team-performance/', views_other.team_performance_detail, name='team_performance_detail'),
     path('profile/', views_other.profile, name='profile'),
 ]
 
