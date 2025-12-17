@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #333;">{{ title }}</h1>
+            <a href="{% url 'workspace' %}?mode=supervisor" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+                ← Voltar para Workspace Supervisor
+            </a>
+        </div>
+        <div style="text-align: right;">
+            <span style="display: block; color: #666; font-size: 0.9rem;">Time</span>
+            <strong style="font-size: 1.2rem; color: #333;">{{ team_data.team_name }}</strong>
+        </div>
+    </div>
+</div>
+
+<div style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #333;">Indicadores Chave (KPIs)</h2>
+    
+    <div style="overflow-x: auto; padding-bottom: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(8, minmax(140px, 1fr)); gap: 10px; min-width: 1000px;">
+            
+            {% include "components/kpi_box.html" with label="Conversas" value=team_data.total_conversations|floatformat:0 %}
+            {% include "components/kpi_box.html" with label="Vendedores" value=team_data.seller_analytics|length %}
+            {% include "components/kpi_box.html" with label="Reuniões Agendadas" value=team_data.meetings_scheduled|floatformat:0 %}
+            {% include "components/kpi_box.html" with label="Indicações Recebidas" value=team_data.referrals_received|floatformat:0 %}
+            {% include "components/kpi_box.html" with label="Follow-Ups" value=team_data.total_follow_ups|floatformat:0 %}
+            {% include "components/kpi_box.html" with label="Nota Performance" value=team_data.avg_performance|floatformat:2|add:"%" %}
+            {% include "components/kpi_box.html" with label="Conversão" value=team_data.conversion_rate|floatformat:1|add:"%" %}
+            <div style="background: white; border-radius: 6px;"></div>
+
+            {% include "components/kpi_box.html" with label="Fez Follow-Up" value=team_data.follow_up_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Tentou Reunião" value=team_data.meeting_attempt_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Agendou Reunião" value=team_data.meeting_success_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Pediu Indicação" value=team_data.referral_request_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Converteu Indicação" value=team_data.referral_conversion_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Resolveu Objeções" value=team_data.objection_resolution_rate|floatformat:0|add:"%" %}
+            {% include "components/kpi_box.html" with label="Msgs por Vendedor" value=team_data.avg_seller_messages|floatformat:1 %}
+            {% include "components/kpi_box.html" with label="Ofereceu Desconto" value=team_data.discount_strategy_rate|floatformat:0|add:"%" %}
+            
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+    
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #333; font-weight: bold;">Estágios de Venda por Vendedor</h2>
+        <div style="height: 450px; width: 100%;">
+            <canvas id="stageChart"></canvas>
+        </div>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #333; font-weight: bold; text-align: center;">Adoção de Práticas Comerciais</h2>
+        <div style="height: 400px; width: 100%;">
+            <canvas id="practiceRadarChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #333; display: flex; align-items: center; gap: 10px;">
+        Frequência de Objeções
+        <span style="font-size: 0.8rem; font-weight: normal; color: #718096; background: #edf2f7; padding: 2px 8px; border-radius: 12px;">Top 10</span>
+    </h2>
+
+    {% if team_data.objection_analysis %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+            <thead>
+                <tr style="background-color: #00B4D8; color: white; text-align: center;">
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 20%;">Tipo</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 15%;">Frequência</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 15%;">Score Médio</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Melhor Vendedor</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Pior Vendedor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in team_data.objection_analysis %}
+                <tr style="background-color: {% cycle 'white' '#F0F9FF' %}; border-bottom: 1px solid #e2e8f0; transition: background 0.2s;" 
+                    onmouseover="this.style.backgroundColor='#e0f2fe'" 
+                    onmouseout="this.style.backgroundColor='{% cycle 'white' '#F0F9FF' %}'">
+                    
+                    <td style="padding: 12px; color: #2d3748; font-weight: 600; text-align: center; border-right: 1px solid #edf2f7;">
+                        {{ obj.type }}
+                    </td>
+                    
+                    <td style="padding: 12px; color: #4a5568; text-align: center; border-right: 1px solid #edf2f7;">
+                        {{ obj.freq }}
+                    </td>
+                    
+                    <td style="padding: 12px; text-align: center; border-right: 1px solid #edf2f7;">
+                        <span style="
+                            padding: 4px 10px; 
+                            border-radius: 12px; 
+                            font-size: 0.85rem; 
+                            font-weight: 700;
+                            {% if obj.score >= 70 %}
+                                background: #d1fae5; color: #047857; /* Verde */
+                            {% elif obj.score >= 50 %}
+                                background: #ffedd5; color: #c2410c; /* Laranja */
+                            {% else %}
+                                background: #fee2e2; color: #b91c1c; /* Vermelho */
+                            {% endif %}
+                        ">
+                            {{ obj.score }}
+                        </span>
+                    </td>
+                    
+                    <td style="padding: 12px; text-align: center; color: #047857; font-weight: 500; border-right: 1px solid #edf2f7;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>🏆</span> {{ obj.best }}
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 12px; text-align: center; color: #c53030;">
+                        {{ obj.worst }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: #a0aec0; background: #f7fafc; border-radius: 6px;">
+            <p style="font-size: 1.1rem;">Nenhuma objeção registrada para esta equipe no período.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    const sellerData = {{ team_data.seller_analytics|safe }};
+    const teamName = "{{ team_data.team_name }}";
+    const pythonColors = ['#3498DB', '#F39C12', '#E74C3C', '#9B59B6', '#2ECC71', '#95A5A6', '#1ABC9C', '#E67E22', '#8E44AD', '#16A085'];
+
+    // -------------------- STAGES STACKED BAR --------------------
+    const ctxStage = document.getElementById('stageChart').getContext('2d');
+    
+    const stageLabels = [
+        'Cliente Ativo', 'Lead Perdido', 'Comprou',
+        'Aguardando Pagamento', 'Proposta Enviada',
+        'Apresentação', 'Contato Inicial'
+    ];
+    
+    const stageMapping = {
+        'Contato Inicial': 'introduction_conversation_started',
+        'Apresentação': 'explaining_solution_product',
+        'Proposta Enviada': 'proposal_sent_awaiting_decision',
+        'Aguardando Pagamento': 'awaiting_payment_terms_agreed',
+        'Comprou': 'purchased_payment_confirmed',
+        'Lead Perdido': 'lost_lead_no_engagement',
+        'Cliente Ativo': 'active_client_support_request'
+    };
+
+
+    const stageDatasets = sellerData.map((seller, index) => {
+        const data = stageLabels.map(label => {
+            const key = stageMapping[label];
+            return seller.sale_stage_distribution[key] || 0;
+        });
+
+        return {
+            label: seller.real_name || seller.seller_name,
+            data: data,
+            backgroundColor: pythonColors[index % pythonColors.length],
+            stack: 'Stack 0',
+        };
+    });
+
+    new Chart(ctxStage, {
+        type: 'bar',
+        data: {
+            labels: stageLabels,
+            datasets: stageDatasets
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: true,
+                    title: { display: true, text: 'Número de Conversas', font: { size: 14 } },
+                    grid: { display: false }
+                },
+                y: {
+                    stacked: true,
+                    grid: { display: false },
+                    ticks: { font: { size: 12 } }
+                }
+            },
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // -------------------- RADAR GRAPH ------------------------
+    const ctxRadar = document.getElementById('practiceRadarChart').getContext('2d');
+    
+    const categories = ['Fez Follow-Up', 'Tentou Reunião', 'Pediu Indicação', 'Resolveu Objeções', 'Deu Desconto'];
+    
+    function getAvg(key) {
+        if (!sellerData.length) return 0;
+        const sum = sellerData.reduce((acc, curr) => acc + (curr[key] || 0), 0);
+        return sum / sellerData.length;
+    }
+
+    const teamValues = [
+        getAvg('follow_up_rate'),
+        getAvg('meeting_attempt_rate'),
+        getAvg('referral_request_rate'),
+        {{ team_data.objection_resolution_rate }},
+        getAvg('discount_strategy_rate')
+    ];
+
+    new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+            labels: categories,
+            datasets: [{
+                label: 'Equipe ' + teamName,
+                data: teamValues,
+                fill: true,
+                backgroundColor: 'rgba(0, 180, 216, 0.25)',
+                borderColor: '#00B4D8',
+                pointBackgroundColor: '#00B4D8',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#00B4D8'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: { line: { borderWidth: 2 } },
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: { stepSize: 20 },
+                    pointLabels: { font: { size: 12 } }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+</script>
+{% endblock %}
