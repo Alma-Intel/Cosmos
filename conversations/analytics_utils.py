@@ -179,3 +179,60 @@ def get_summary_stats(data):
         'columns': columns
     }
 
+
+def get_mock_team_analytics(team_members):
+    """Returns mocked data mimicking the structure of the Reports."""
+    import random
+    seller_analytics = []
+
+    team_members = [
+        {'name': 'Bianca', 'uuid': '0ec8c695-3bc1-4200-b674-aa4e94155055'},
+        {'name': 'Caio', 'uuid': 'c496be8f-e0f2-454c-937e-326e40082712'},
+        {'name': 'Luísa', 'uuid': 'cb65a4bc-1b0b-4b11-ac4c-2edd3cba9ccf'},
+        {'name': 'Vanessa', 'uuid': '9d4d411d-2490-42da-97af-d65d584df666'},
+    ]
+    
+    for seller in team_members:
+        s_data = {
+            'seller_name': seller['uuid'],
+            'real_name': seller['name'],
+            
+            'follow_up_rate': random.randint(30, 90),
+            'meeting_attempt_rate': random.randint(20, 60),
+            'referral_request_rate': random.randint(5, 40),
+            'discount_strategy_rate': random.randint(10, 50),
+            
+            'sale_stage_distribution': {
+                'introduction_conversation_started': random.randint(2, 8), 
+                'explaining_solution_product': random.randint(1, 5),  
+                'proposal_sent_awaiting_decision': random.randint(0, 3),
+                'awaiting_payment_terms_agreed': random.randint(0, 2),
+                'purchased_payment_confirmed': random.randint(0, 1),
+                'lost_lead_no_engagement': random.randint(0, 2), 
+                'active_client_support_request': 0
+            }
+        }
+        seller_analytics.append(s_data)
+
+    team_data = {
+        'team_name': 'Bela',
+        'seller_analytics': seller_analytics,
+        
+        'total_conversations': 154,
+        'meetings_scheduled': 12,
+        'referrals_received': 3,
+        'total_follow_ups': 45,
+        'avg_performance': 57.44,
+        'conversion_rate': 8.5,
+        
+        'follow_up_rate': 62.0,
+        'meeting_attempt_rate': 25.0,
+        'meeting_success_rate': 15.0,
+        'referral_request_rate': 10.0,
+        'referral_conversion_rate': 5.0,
+        'objection_resolution_rate': 69.0,
+        'avg_seller_messages': 14.5,
+        'discount_strategy_rate': 30.0,
+    }
+    
+    return [team_data]
