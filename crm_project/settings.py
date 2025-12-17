@@ -144,6 +144,36 @@ EVENTS_CONVERSATION_ID_COLUMN = config('EVENTS_CONVERSATION_ID_COLUMN', default=
 EVENTS_TIMESTAMP_COLUMN = config('EVENTS_TIMESTAMP_COLUMN', default='datetime')
 EVENTS_ORIGIN_COLUMN = config('EVENTS_ORIGIN_COLUMN', default='dialogue')
 
+# Third PostgreSQL database for events
+# Try to get FOLLOWUPS_DATABASE_URL first (Railway format)
+followups_database_url = config('FOLLOWUPS_DATABASE_URL', default=None)
+
+if followups_database_url:
+    # Remove quotes if present
+    followups_database_url = followups_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if followups_database_url and not followups_database_url.startswith('${{'):
+        # Add events database to DATABASES
+        DATABASES['followups'] = dj_database_url.parse(followups_database_url)
+    else:
+        followups_database_url = None
+
+if not followups_database_url or followups_database_url.startswith('${{'):
+    # Fall back to individual environment variables for followups database
+    DATABASES['followups'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('FOLLOWUPS_DB_NAME', default='followups_db'),
+        'USER': config('FOLLOWUPS_DB_USER', default='postgres'),
+        'PASSWORD': config('FOLLOWUPS_DB_PASSWORD', default=''),
+        'HOST': config('FOLLOWUPS_DB_HOST', default='localhost'),
+        'PORT': config('FOLLOWUPS_DB_PORT', default='5432'),
+    }
+
+# Events database table name (configurable)
+FOLLOWUPS_TABLE_NAME = config('FOLLOWUPS_TABLE_NAME', default='follow_up')
+FOLLOWUPS_AGENT_ID_COLUMN = config('FOLLOWUPS_AGENT_ID_COLUMN', default='agent_uuid')
+FOLLOWUPS_TIMESTAMP_COLUMN = config('FOLLOWUPS_TIMESTAMP_COLUMN', default='follow_up_date')
+
 # MongoDB Configuration
 # Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
 # Check for MONGO_URL first, then fall back to MONGODB_URL
