@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+{% if can_switch_view %}
+        {% if current_view == 'agent' %}
+            <a href="?mode=supervisor" style="padding: 10px 20px; background: white; border: 1px solid #cbd5e0; color: #2d3748; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> Ir para Visão Supervisor
+            </a>
+        {% else %}
+            <a href="?mode=agent" style="padding: 10px 20px; background: white; border: 1px solid #cbd5e0; color: #2d3748; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span>👤</span> Voltar para Visão Agente
+            </a>
+        {% endif %}
+    {% endif %}
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+    
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #a133e0; display: flex; align-items: center; gap: 8px;">
+                Performance do Time
+            </h2>
+
+            {% if team_summary %}
+                <div style="flex: 1;">
+                    <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0;">
+                        <span style="display: block; font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">Score Médio Geral</span>
+                        <span style="font-size: 2.5rem; font-weight: 700; color: #a133e0;">{{ team_summary.avg_performance|floatformat:1 }}</span>
+                        <span style="font-size: 0.9rem; color: #48bb78; background: #f0fff4; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">Bom</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;">
+                        
+                        <div style="background: #faf5ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Conversão</span>
+                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.conversion_rate }}%</strong>
+                        </div>
+
+                        <div style="background: #faf5ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Reuniões</span>
+                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.meetings_scheduled }}</strong>
+                        </div>
+
+                        <div style="background: #f3e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Conversas</span>
+                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.total_conversations }}</strong>
+                        </div>
+
+                        <div style="background: #f3e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Follow-ups</span>
+                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.total_follow_ups }}</strong>
+                        </div>
+
+                    </div>
+                </div>
+
+                <a href="{% url 'team_performance_detail' %}" style="display: block; text-align: center; padding: 0.75rem; background: #a133e0; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s; margin-top: auto;"
+                onmouseover="this.style.background='#8b21c9'"
+                onmouseout="this.style.background='#a133e0'">
+                    Ver Relatório Completo &rarr;
+                </a>
+            {% else %}
+                <p style="color: #999;">Dados não disponíveis.</p>
+            {% endif %}
+        </div>
+
+    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #c62828;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.3rem; margin: 0; color: #c62828; display: flex; align-items: center; gap: 8px;">
+                        Casos para Verificação
+                    </h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">Clientes precisando de atenção imediata</p>
+                </div>
+                <div style="background: #ffebee; color: #c62828; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem;">
+                    {{ critical_count }}
+                </div>
+            </div>
+
+            {% if top_critical_cases %}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                    {% for case in top_critical_cases %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #fafafa; border-radius: 6px; border: 1px solid #eee;">
+                        <div>
+                            <strong style="color: #333; display: block;">{{ case.client_name }}</strong>
+                            <span style="font-size: 0.8rem; color: #888;">Última interação: {{ case.days_since_last_interaction|default:"N/A" }} dias atrás</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="display: block; font-weight: bold; color: #c62828;">Score: {{ case.risk_score }}</span>
+                            <span style="font-size: 0.8rem; color: #666;">{{ case.trend|default:"-" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="padding: 1.5rem; text-align: center; color: #888; font-style: italic;">
+                    Nenhum caso crítico detectado hoje.
+                </div>
+            {% endif %}
+
+            <a href="/analytics/critical-cases/" style="display: block; text-align: center; padding: 0.75rem; background: #c62828; color: #ffebee; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s;"
+            onmouseover="this.style.background='#ad2323'"
+            onmouseout="this.style.background='#c62828'">
+                Ver Análise Detalhada ({{ critical_count }} casos) &rarr;
+            </a>
+    </div>
+    
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); grid-column: span 2;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #4299e1;">
+                Funil de Vendas do Time
+            </h2>
+            <div style="height: 300px; width: 100%;">
+                <canvas id="funnelChart"></canvas>
+            </div>
+    </div>
+
+
+    </div>
+
+</div>
+
+<script>
+    const ctx = document.getElementById('funnelChart').getContext('2d');
+    
+    const colors = ['#3182ce', '#63b3ed', '#90cdf4', '#bee3f8', '#ebf8ff'];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ funnel_data.labels|safe }},
+            datasets: [{
+                label: 'Conversões',
+                data: {{ funnel_data.data|safe }},
+                backgroundColor: '#4299e1',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}
