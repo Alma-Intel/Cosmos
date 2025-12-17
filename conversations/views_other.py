@@ -2,6 +2,7 @@
 Views for other sections: Agentes, Clientes, Bots, Workspace
 """
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -419,11 +420,168 @@ def bots_list(request):
 @login_required
 def workspace(request):
     """Workspace view"""
-    context = {
-        'title': 'Workspace',
-    }
-    return render(request, 'conversations/placeholder.html', context)
+    user = request.user
+    profile = getattr(user, 'profile', None)
+    
+    is_manager_plus = profile and (profile.is_manager() or profile.is_director() or profile.is_admin())
+    
+    mode = request.GET.get('mode', 'agent')
+    
+    if mode == 'supervisor' and not is_manager_plus:
+        return redirect('workspace')
+        
+    if mode == 'supervisor':
+        return _workspace_supervisor_view(request, profile)
+    else:
+        return _workspace_agent_view(request, profile, is_manager_plus)
 
+def _workspace_agent_view(request, user_profile, can_switch_view):
+    """Workspace view"""
+    import json
+    from .followups import (get_followups_for_agent, 
+                            get_link_tracking_from_agent,
+                            get_conversation_id,
+                            create_infobip_conversation_link
+                            )
+    from .metrics import ( get_metrics_for_agent )
+    
+    if not user_profile:
+        user_profile = getattr(request.user, 'profile', None)
+
+    external_uuid = user_profile.external_uuid if user_profile else None
+
+    all_followups = get_followups_for_agent(external_uuid)
+    all_links = get_link_tracking_from_agent(external_uuid)
+
+    followups_dict = {}
+
+    for link in all_links:
+        link_url = link['original_url']
+        if link_url:
+            conversation_id = get_conversation_id(link_url, "conversationId=", "&")
+            if conversation_id:
+                followups_dict[conversation_id] = link_url
+
+    now = timezone.now()
+    end = (now + timezone.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    high_priority_tasks = []
+    low_priority_tasks = []
+    calendar_events = []
+
+    for task in all_followups:
+        conversation_id_str = str(task['conversation_uuid'])
+        task['original_url'] = followups_dict.get(conversation_id_str)
+
+        if not task['original_url']:
+            task['original_url'] = create_infobip_conversation_link(conversation_id_str)
+
+        task_date = task['follow_up_date']
+
+        if timezone.is_naive(task_date):
+            task_date = timezone.make_aware(task_date)
+            task['follow_up_date'] = task_date
+
+        is_high_priority = False 
+
+        if task_date <= now and task['score'] >= 700:
+            if len(high_priority_tasks) <= 5:
+                high_priority_tasks.append(task)
+                is_high_priority = True
+
+        if not is_high_priority:
+            if task_date <= end:
+                low_priority_tasks.append(task)
+
+    all_tasks_for_calendar = high_priority_tasks + low_priority_tasks
+
+    for task in all_tasks_for_calendar:
+        event = {
+            'title': f"Score: {task['score']}", 
+            'start': task['follow_up_date'].isoformat(),
+            'url': task.get('original_url') or '#',
+            'backgroundColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
+            'borderColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
+            'allDay': True
+        }
+        calendar_events.append(event)
+
+    high_priority_tasks.sort(key=lambda x: (-x['score'], x['follow_up_date']))
+    high_priority_tasks = high_priority_tasks[:5]
+
+    low_priority_tasks.sort(key=lambda x: (x['follow_up_date'], -x['score']))
+    low_priority_tasks = low_priority_tasks[:10]
+
+    metrics_data = get_metrics_for_agent(external_uuid)
+
+    context = {
+        'title': 'Agent Workspace',
+        'high_priority_tasks': high_priority_tasks,
+        'metrics': metrics_data,
+        'can_switch_view': can_switch_view,
+        'current_view': 'agent',
+        'calendar_events_json': json.dumps(calendar_events)
+    }
+    
+    return render(request, 'conversations/workspace_agent.html', context)
+
+def _workspace_supervisor_view(request, profile):
+    from .events_db import get_sales_stage_change_events
+    from .analytics_utils import get_clients_analysis, get_mock_team_analytics
+    
+    team_members = get_user_team_members(request.user)
+    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
+    
+    funnel_raw = get_sales_stage_change_events(team_uuids)
+    clients_data, _, global_analyses = get_clients_analysis()
+    
+    funnel_data = {
+        'labels': list(funnel_raw.keys()),
+        'data': list(funnel_raw.values())
+    }
+
+    all_teams_data = get_mock_team_analytics(team_uuids)
+    team_summary = all_teams_data[0] if all_teams_data else None
+
+    critical_cases = []
+    cases = global_analyses.get('critical_cases', []) if global_analyses else []
+    
+    if clients_data:
+        critical_cases = [
+            c for c in cases 
+            if c.get('risk_level', '').lower() == 'high' 
+            or c.get('risk_score', 0) >= 80
+        ]
+        critical_cases.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
+
+    context = {
+        'title': 'Supervisor Workspace',
+        'current_view': 'supervisor',
+        'can_switch_view': True,
+        'funnel_data': funnel_data,
+        'critical_count': len(critical_cases),
+        'team_summary': team_summary,
+        'top_critical_cases': critical_cases[:5],
+    }
+    
+    return render(request, 'conversations/workspace_supervisor.html', context)
+
+@login_required
+def team_performance_detail(request):
+    from .analytics_utils import get_mock_team_analytics
+    team_members = get_user_team_members(request.user)
+    #team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
+
+    teams_data = get_mock_team_analytics(team_members)
+    
+    current_team_data = teams_data[0] if teams_data else {}
+    
+    context = {
+        'title': 'Team Performance Analysis',
+        'team_data': current_team_data,
+    }
+    
+    return render(request, 'conversations/analytics_team_performance_detail.html', context)
 
 @login_required
 def analytics(request):
