@@ -4,7 +4,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-{% if can_switch_view %}
+    {% if can_switch_view %}
         {% if current_view == 'agent' %}
             <a href="?mode=supervisor" style="padding: 10px 20px; background: white; border: 1px solid #cbd5e0; color: #2d3748; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                 <span>📊</span> Ir para Visão Supervisor
@@ -20,7 +20,7 @@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
     
         <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
-            <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #a133e0; display: flex; align-items: center; gap: 8px;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #667eea; display: flex; align-items: center; gap: 8px;">
                 Performance do Time
             </h2>
 
@@ -28,38 +28,38 @@
                 <div style="flex: 1;">
                     <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0;">
                         <span style="display: block; font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">Score Médio Geral</span>
-                        <span style="font-size: 2.5rem; font-weight: 700; color: #a133e0;">{{ team_summary.avg_performance|floatformat:1 }}</span>
+                        <span style="font-size: 2.5rem; font-weight: 700; color: #667eea;">{{ team_summary.avg_performance|floatformat:1 }}</span>
                         <span style="font-size: 0.9rem; color: #48bb78; background: #f0fff4; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">Bom</span>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;">
                         
-                        <div style="background: #faf5ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
-                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Conversão</span>
-                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.conversion_rate }}%</strong>
+                        <div style="background: #f5f6ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Conversão</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.conversion_rate }}%</strong>
                         </div>
 
-                        <div style="background: #faf5ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
-                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Reuniões</span>
-                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.meetings_scheduled }}</strong>
+                        <div style="background: #f5f6ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Reuniões</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.meetings_scheduled }}</strong>
                         </div>
 
-                        <div style="background: #f3e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
-                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Conversas</span>
-                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.total_conversations }}</strong>
+                        <div style="background: #e8e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Conversas</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.total_conversations }}</strong>
                         </div>
 
-                        <div style="background: #f3e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
-                            <span style="display: block; font-size: 0.75rem; color: #805ad5; margin-bottom: 2px;">Follow-ups</span>
-                            <strong style="font-size: 1.1rem; color: #553c9a;">{{ team_summary.total_follow_ups }}</strong>
+                        <div style="background: #e8e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Follow-ups</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.total_follow_ups }}</strong>
                         </div>
 
                     </div>
                 </div>
 
-                <a href="{% url 'team_performance_detail' %}" style="display: block; text-align: center; padding: 0.75rem; background: #a133e0; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s; margin-top: auto;"
-                onmouseover="this.style.background='#8b21c9'"
-                onmouseout="this.style.background='#a133e0'">
+                <a href="{% url 'team_performance_detail' %}" style="display: block; text-align: center; padding: 0.75rem; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s; margin-top: auto;"
+                onmouseover="this.style.background='#485db9'"
+                onmouseout="this.style.background='#667eea'">
                     Ver Relatório Completo &rarr;
                 </a>
             {% else %}
@@ -109,7 +109,7 @@
     </div>
     
         <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); grid-column: span 2;">
-            <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #4299e1;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #667eea;">
                 Funil de Vendas do Time
             </h2>
             <div style="height: 300px; width: 100%;">
@@ -134,7 +134,7 @@
             datasets: [{
                 label: 'Conversões',
                 data: {{ funnel_data.data|safe }},
-                backgroundColor: '#4299e1',
+                backgroundColor: '#667eea',
                 borderRadius: 4,
             }]
         },
