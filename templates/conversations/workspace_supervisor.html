@@ -29,7 +29,23 @@
                     <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0;">
                         <span style="display: block; font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">Score Médio Geral</span>
                         <span style="font-size: 2.5rem; font-weight: 700; color: #667eea;">{{ team_summary.avg_performance|floatformat:1 }}</span>
-                        <span style="font-size: 0.9rem; color: #48bb78; background: #f0fff4; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">Bom</span>
+                        {% if team_summary.avg_performance > 80 %}
+                            <span style="font-size: 0.9rem; color: #48bb78; background: #f0fff4; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Ótimo
+                            </span>
+                        {% elif team_summary.avg_performance > 60 %}
+                            <span style="font-size: 0.9rem; color: #2b6cb0; background: #ebf8ff; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Bom
+                            </span>
+                        {% elif team_summary.avg_performance > 50 %}
+                            <span style="font-size: 0.9rem; color: #c05621; background: #fffaf0; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Médio
+                            </span>
+                        {% else %}
+                            <span style="font-size: 0.9rem; color: #c53030; background: #fff5f5; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Ruim
+                            </span>
+                        {% endif %}
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;">
