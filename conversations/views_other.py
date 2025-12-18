@@ -456,11 +456,16 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     followups_dict = {}
 
     for link in all_links:
+        baseUrl = "https://followupsbot-prod.up.railway.app/r/"
         link_url = link['original_url']
+        slug = link['slug']
         if link_url:
             conversation_id = get_conversation_id(link_url, "conversationId=", "&")
             if conversation_id:
-                followups_dict[conversation_id] = link_url
+                if slug:
+                    followups_dict[conversation_id] = baseUrl + slug
+                else:
+                    followups_dict[conversation_id] = link_url
 
     now = timezone.now()
     end = (now + timezone.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
