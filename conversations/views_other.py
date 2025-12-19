@@ -443,7 +443,8 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
                             get_conversation_id,
                             create_infobip_conversation_link
                             )
-    from .metrics import ( get_metrics_for_agent )
+    from .analytics_metrics import ( get_stage_scores, 
+                                    get_metrics_for_agent)
     
     if not user_profile:
         user_profile = getattr(request.user, 'profile', None)
@@ -518,11 +519,12 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     low_priority_tasks = low_priority_tasks[:10]
 
     metrics_data = get_metrics_for_agent(external_uuid)
+    scores_data = get_stage_scores(metrics_data)
 
     context = {
         'title': 'Agent Workspace',
         'high_priority_tasks': high_priority_tasks,
-        'metrics': metrics_data,
+        'metrics': scores_data,
         'can_switch_view': can_switch_view,
         'current_view': 'agent',
         'calendar_events_json': json.dumps(calendar_events)
@@ -531,22 +533,29 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     return render(request, 'conversations/workspace_agent.html', context)
 
 def _workspace_supervisor_view(request, profile):
-    from .events_db import get_sales_stage_change_events
-    from .analytics_utils import get_clients_analysis, get_mock_team_analytics
+    from .events_db import (
+        get_sales_stage_metrics,
+        get_followups_detection)
+    from .analytics_utils import (get_clients_analysis)
+    from .analytics_metrics import (get_team_summary_stats, 
+                                    get_metrics_for_agent,
+                                    get_sentiment_analysis)
     
     team_members = get_user_team_members(request.user)
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
-    
-    funnel_raw = get_sales_stage_change_events(team_uuids)
+    team_summary = get_team_summary_stats(team_members)
+
+    sales_data = get_sales_stage_metrics(team_uuids)
+
+    funnel_raw = sales_data.get('stages', {})
+    sorted_items = sorted(funnel_raw.items(), key=lambda x: x[1], reverse=True)
+
     clients_data, _, global_analyses = get_clients_analysis()
     
     funnel_data = {
-        'labels': list(funnel_raw.keys()),
-        'data': list(funnel_raw.values())
+        'labels': [item[0] for item in sorted_items],
+        'data': [item[1] for item in sorted_items]
     }
-
-    all_teams_data = get_mock_team_analytics(team_uuids)
-    team_summary = all_teams_data[0] if all_teams_data else None
 
     critical_cases = []
     cases = global_analyses.get('critical_cases', []) if global_analyses else []
@@ -573,17 +582,94 @@ def _workspace_supervisor_view(request, profile):
 
 @login_required
 def team_performance_detail(request):
-    from .analytics_utils import get_mock_team_analytics
+    from .analytics_metrics import get_metrics_for_agent, calculate_agent_scores
+    
     team_members = get_user_team_members(request.user)
-    #team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
+    user, _ = UserProfile.objects.get_or_create(user=request.user)
+    team_name = "Users Team"
 
-    teams_data = get_mock_team_analytics(team_members)
+    if user and user.team:
+        if user.team.name is not None:
+            team_name = user.team.name
+
+    team_aggregates = {
+        'total_conversations': 0,
+        'total_sales': 0,
+        'meetings_scheduled': 0,
+        'referrals_received': 0,
+        'total_follow_ups': 0,
+        'sum_performance': 0,
+        'count_performance': 0,
+        
+        'sum_followup_rate': 0,
+        'sum_meeting_attempt': 0,
+        'sum_meeting_success': 0,
+        'sum_referral_req': 0,
+        'sum_discount_strat': 0,
+        'sum_objection_res': 0,
+        'active_agents_count': 0
+    }
+
+    sellers_analytics = []
+
+    for member in team_members:
+        analysis_list = get_metrics_for_agent(member.external_uuid)
+        agent_data = calculate_agent_scores(member, analysis_list)
+        
+        if not agent_data: continue
+
+        sellers_analytics.append(agent_data)
+
+        team_aggregates['total_conversations'] += agent_data.get('total_conversations', 0)
+        team_aggregates['total_sales'] += agent_data.get('total_sales', 0)
+        team_aggregates['meetings_scheduled'] += agent_data.get('meetings_scheduled', 0)
+        team_aggregates['referrals_received'] += agent_data.get('referrals_received', 0)
+        team_aggregates['total_follow_ups'] += agent_data.get('total_followups', 0)
+        
+        team_aggregates['sum_performance'] += agent_data.get('avg_performance', 0)
+        team_aggregates['count_performance'] += 1 if agent_data.get('avg_performance', 0) > 0 else 0
+
+        team_aggregates['sum_followup_rate'] += agent_data.get('follow_up_rate', 0)
+        team_aggregates['sum_meeting_attempt'] += agent_data.get('meeting_attempt_rate', 0)
+        team_aggregates['sum_meeting_success'] += agent_data.get('meeting_success_rate', 0)
+        team_aggregates['sum_referral_req'] += agent_data.get('referral_request_rate', 0)
+        team_aggregates['sum_discount_strat'] += agent_data.get('discount_strategy_rate', 0)
+        team_aggregates['sum_objection_res'] += agent_data.get('objection_resolution_rate', 0)
+        
+        team_aggregates['active_agents_count'] += 1
+
+    num_agents = team_aggregates['active_agents_count'] if team_aggregates['active_agents_count'] > 0 else 1
     
-    current_team_data = teams_data[0] if teams_data else {}
-    
+    team_conversion_rate = 0
+    if team_aggregates['total_conversations'] > 0:
+        team_conversion_rate = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
+
+    team_data = {
+        'team_name': team_name,
+        'seller_analytics': sellers_analytics,
+        
+        'total_conversations': team_aggregates['total_conversations'],
+        'meetings_scheduled': team_aggregates['meetings_scheduled'],
+        'referrals_received': team_aggregates['referrals_received'],
+        'total_follow_ups': team_aggregates['total_follow_ups'],
+        
+        'conversion_rate': round(team_conversion_rate, 2),
+        'avg_performance': round(team_aggregates['sum_performance'] / num_agents, 2),
+        
+        'follow_up_rate': round(team_aggregates['sum_followup_rate'] / num_agents, 1),
+        'meeting_attempt_rate': round(team_aggregates['sum_meeting_attempt'] / num_agents, 1),
+        'meeting_success_rate': round(team_aggregates['sum_meeting_success'] / num_agents, 1),
+        'referral_request_rate': round(team_aggregates['sum_referral_req'] / num_agents, 1),
+        'discount_strategy_rate': round(team_aggregates['sum_discount_strat'] / num_agents, 1),
+        'objection_resolution_rate': round(team_aggregates['sum_objection_res'] / num_agents, 1),
+        
+        'referral_conversion_rate': 0,
+        'avg_seller_messages': 0,
+    }
+
     context = {
         'title': 'Team Performance Analysis',
-        'team_data': current_team_data,
+        'team_data': team_data,
     }
     
     return render(request, 'conversations/analytics_team_performance_detail.html', context)
