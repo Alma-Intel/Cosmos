@@ -75,89 +75,160 @@ def get_events_for_conversation(conversation_id):
         return []
 
 
-def get_sales_stage_change_events(team_members_uuids):
-    mock_funnel = {
-        'Contato Inicial': 150,
-        'Apresentação': 85,
-        'Proposta Enviada': 42,
-        'Aguardando Pagamento': 20,
-        'Comprou': 12,
-        'Lead Perdido': 35
+def get_sales_stage_metrics(team_members_uuids):
+    LABEL_TRANSLATIONS = {
+        'purchased_payment_confirmed': 'Pagamento Confirmado', 
+        'active_client_support_request': 'Suporte de Cliente Ativo', 
+        'explaining_solution_product': 'Explicando Produto', 
+        'introduction_conversation_started': 'Introdução', 
+        'lost_lead_no_engagement': 'Lead Sem Engajamento', 
+        'proposal_sent_awaiting_decision': 'Proposta Enviada', 
+        'awaiting_payment_terms_agreed': 'Aguardando Pagamento'
+    }
+    
+    mock_data = {
+        'stages': {'Introdução': 100, 'Pagamento Confirmado': 10},
+        'total_conversations': 100,
+        'total_sales': 10,
+        'conversion_rate': 10.0
     }
 
     try:
         if not team_members_uuids:
-            return mock_funnel
+            return mock_data
             
         events_db = settings.DATABASES.get('events')
         if not events_db:
             if settings.DEBUG:
                 print("Events database not configured")
-            return mock_funnel
-        
-        conn = psycopg2.connect(
-            host=events_db.get('HOST', 'localhost'),
-            port=events_db.get('PORT', '5432'),
-            database=events_db.get('NAME', 'events_db'),
-            user=events_db.get('USER', 'postgres'),
-            password=events_db.get('PASSWORD', '')
-        )
-        
-        uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
-        
-        query = """
+            return {}
+
+        query_stages = """
             SELECT json->>'NEW_STAGE' as stage, COUNT(*) as count
             FROM events
             WHERE event_type = 'SALES_STAGE_CHANGE'
             AND agent_uuid IN %s
             GROUP BY json->>'NEW_STAGE'
-            ORDER BY count DESC
         """
-        
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (uuids_formatted,))
-        
-        results = cursor.fetchall()
-        events_dict = {row[0]: row[1] for row in results if row[0]}
-        
-        cursor.close()
-        conn.close()
-        
-        if settings.DEBUG:
-            print(f"Fetched {len(events_dict)} stages for conversation team.")
-        
-        if len(events_dict) == 0:
-            return mock_funnel
 
-        return events_dict
-        
-    except psycopg2.Error as e:
-        if settings.DEBUG:
-            print(f"Error fetching events from PostgreSQL: {e}")
-        return mock_funnel
-    except Exception as e:
-        if settings.DEBUG:
-            print(f"Unexpected error fetching events: {e}")
-        return mock_funnel
+        query_total = """
+            SELECT COUNT(DISTINCT conversation_uuid)
+            FROM events
+            WHERE event_type = 'SALES_STAGE_CHANGE'
+            AND agent_uuid IN %s
+        """
 
-def get_objections_events_for_team(team_members_uuids):
-    try:
-        if not team_members_uuids:
-            return {}
-            
-        events_db = settings.DATABASES.get('events')
-        if not events_db:
-            if settings.DEBUG:
-                print("Events database not configured")
-            return {}
-        
-        conn = psycopg2.connect(
+        with psycopg2.connect(
             host=events_db.get('HOST', 'localhost'),
             port=events_db.get('PORT', '5432'),
             database=events_db.get('NAME', 'events_db'),
             user=events_db.get('USER', 'postgres'),
             password=events_db.get('PASSWORD', '')
-        )
+        ) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
+                cursor.execute(query_stages, (uuids_formatted,))
+                stage_results = cursor.fetchall()
+
+                cursor.execute(query_total, (uuids_formatted,))
+                total_conversations_count = cursor.fetchone()['count']
+
+        
+        translated_stages = {}
+        raw_stages = {}
+        sales_count = 0
+
+        for row in stage_results:
+            raw_stage = row.get('stage')
+            count = row['count']
+            
+            if not raw_stage: continue
+            label = LABEL_TRANSLATIONS.get(raw_stage, raw_stage.replace('_', ' ').title())
+            translated_stages[label] = count
+            raw_stages[raw_stage] = count
+
+            if raw_stage == 'purchased_payment_confirmed':
+                sales_count = count
+        
+        if not translated_stages:
+            return mock_data
+
+        conversion_rate = 0
+        if total_conversations_count > 0:
+            conversion_rate = (sales_count / total_conversations_count) * 100
+
+        return {
+            'stages': translated_stages,
+            'raw_stages': raw_stages,
+            'total_conversations': total_conversations_count,
+            'total_sales': sales_count,
+            'conversion_rate': round(conversion_rate, 2)
+        }
+
+    except Exception as e:
+        if settings.DEBUG: print(f"Unexpected error fetching stages: {e}")
+        return mock_data
+    
+def get_followups_detection(team_members_uuids):
+    followups_detected = []
+    try:
+        if not team_members_uuids:
+            return followups_detected
+            
+        events_db = settings.DATABASES.get('events')
+        if not events_db:
+            if settings.DEBUG:
+                print("Events database not configured")
+            return followups_detected
+        
+        uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
+        
+        query = """
+            SELECT json->>'FOLLOWUP_TRY' as followup_try, COUNT(*) as count
+            FROM events
+            WHERE event_type = 'FOLLOWUP_DETECTION'
+            AND agent_uuid IN %s
+            GROUP BY json->>'FOLLOWUP_TRY'
+            ORDER BY count DESC
+        """
+
+        with psycopg2.connect(
+            host=events_db.get('HOST', 'localhost'),
+            port=events_db.get('PORT', '5432'),
+            database=events_db.get('NAME', 'events_db'),
+            user=events_db.get('USER', 'postgres'),
+            password=events_db.get('PASSWORD', '')
+        ) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (uuids_formatted,))
+                results = cursor.fetchall()
+                followups_detected = [dict(event) for event in results]
+        
+        if settings.DEBUG:
+            print(f"Fetched {len(followups_detected)} followups for conversation team.")
+
+        return followups_detected
+        
+    except psycopg2.Error as e:
+        if settings.DEBUG:
+            print(f"Error fetching followups from PostgreSQL: {e}")
+        return followups_detected
+    
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Unexpected error fetching followups: {e}")
+        return followups_detected
+
+def get_objections_events_for_team(team_members_uuids):
+    try:
+        if not team_members_uuids:
+            return []
+            
+        events_db = settings.DATABASES.get('events')
+        if not events_db:
+            if settings.DEBUG:
+                print("Events database not configured")
+            return []
         
         uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
         
@@ -170,25 +241,28 @@ def get_objections_events_for_team(team_members_uuids):
             ORDER BY count DESC
         """
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (uuids_formatted,))
-        
-        results = cursor.fetchall()
-        events_dict = {row[0]: row[1] for row in results if row[0]}
-        
-        cursor.close()
-        conn.close()
-        
+        with psycopg2.connect(
+            host=events_db.get('HOST', 'localhost'),
+            port=events_db.get('PORT', '5432'),
+            database=events_db.get('NAME', 'events_db'),
+            user=events_db.get('USER', 'postgres'),
+            password=events_db.get('PASSWORD', '')
+        ) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (uuids_formatted,))
+                results = cursor.fetchall()
+                events_list = [dict(event) for event in results]
+
         if settings.DEBUG:
-            print(f"Fetched {len(events_dict)} objection events.")
+            print(f"Fetched {len(events_list)} objection events.")
         
-        return events_dict
+        return events_list
         
     except psycopg2.Error as e:
         if settings.DEBUG:
             print(f"Error fetching events from PostgreSQL: {e}")
-        return {}
+        return []
     except Exception as e:
         if settings.DEBUG:
             print(f"Unexpected error fetching events: {e}")
-        return {}
+        return []
