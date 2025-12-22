@@ -533,13 +533,9 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     return render(request, 'conversations/workspace_agent.html', context)
 
 def _workspace_supervisor_view(request, profile):
-    from .events_db import (
-        get_sales_stage_metrics,
-        get_followups_detection)
-    from .analytics_utils import (get_clients_analysis)
-    from .analytics_metrics import (get_team_summary_stats, 
-                                    get_metrics_for_agent,
-                                    get_sentiment_analysis)
+    from .events_db import ( get_sales_stage_metrics )
+    from .analytics_utils import ( get_clients_analysis )
+    from .analytics_metrics import ( get_team_summary_stats )
     
     team_members = get_user_team_members(request.user)
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
@@ -582,7 +578,11 @@ def _workspace_supervisor_view(request, profile):
 
 @login_required
 def team_performance_detail(request):
-    from .analytics_metrics import get_metrics_for_agent, calculate_agent_scores
+    from .analytics_metrics import (
+                                    get_metrics_for_agent, 
+                                    calculate_agent_scores,
+                                    get_objections_from_database,
+                                    format_objection_data)
     
     team_members = get_user_team_members(request.user)
     user, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -644,9 +644,19 @@ def team_performance_detail(request):
     if team_aggregates['total_conversations'] > 0:
         team_conversion_rate = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
 
+    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
+    objection_list = get_objections_from_database(team_uuids)
+
+    team_members_dict = {}
+    for member in team_members:
+        team_members_dict[member.external_uuid] = member.get_display_name()
+
+    objection_analysis = format_objection_data(objection_list, team_members_dict)
+
     team_data = {
         'team_name': team_name,
         'seller_analytics': sellers_analytics,
+        'objection_analysis': objection_analysis,
         
         'total_conversations': team_aggregates['total_conversations'],
         'meetings_scheduled': team_aggregates['meetings_scheduled'],
