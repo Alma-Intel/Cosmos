@@ -73,7 +73,7 @@ def get_objections_from_database(team_members_uuids):
         uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
         
         query = """
-            SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, created_at agent_uuid
+            SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, created_at, agent_uuid
             FROM analytics
             WHERE agent_uuid IN %s
             AND analysis_type = 'SALES_PERFORMANCE'
