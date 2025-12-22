@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import connections
 import psycopg2
 from psycopg2.extras import RealDictCursor
-
+from collections import defaultdict
 from .events_db import (
     get_sales_stage_metrics,
     get_followups_detection
@@ -55,7 +55,147 @@ def get_metrics_for_agent(agent_uuid):
     except Exception as e:
         print(f"Unexpected error fetching metrics: {e}")
         return []
+
+
+def get_objections_from_database(team_members_uuids):
+    objections_detected = []
+    try:
+        if not team_members_uuids:
+            return objections_detected
+        
+        db_name = "analytics"
+        analytics_db = settings.DATABASES.get(db_name)
+        if not analytics_db:
+            if settings.DEBUG:
+                print("Analytics database not configured")
+            return objections_detected
+        
+        uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
+        
+        query = """
+            SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, created_at agent_uuid
+            FROM analytics
+            WHERE agent_uuid IN %s
+            AND analysis_type = 'SALES_PERFORMANCE'
+            ORDER BY created_at ASC
+        """
+
+        with psycopg2.connect(
+            host=analytics_db.get('HOST', 'localhost'),
+            port=analytics_db.get('PORT', '5432'),
+            database=analytics_db.get('NAME', 'events_db'),
+            user=analytics_db.get('USER', 'postgres'),
+            password=analytics_db.get('PASSWORD', '')
+        ) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, (uuids_formatted,))
+                results = cursor.fetchall()
+                objections_detected = [dict(event) for event in results]
+        
+        if settings.DEBUG:
+            print(f"Fetched {len(objections_detected)} objections from database.")
+
+        return objections_detected
+        
+    except psycopg2.Error as e:
+        if settings.DEBUG:
+            print(f"Error fetching objections from PostgreSQL: {e}")
+        return objections_detected
     
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Unexpected error fetching objections: {e}")
+        return objections_detected
+    
+def format_objection_data(objections_list, team_members_dict):
+    if not objections_list:
+        return []
+
+    stats = defaultdict(lambda: {
+        'count': 0, 
+        'total_score': 0, 
+        'sellers': defaultdict(list), 
+        'responses': []
+    })
+
+    objections_results_list = []
+
+    for obj in objections_list:
+        result = obj.get('result', {})
+        objections_results = result.get('objection_details', {}).get('objections_detected', [])
+
+        for item in objections_results:
+            item['agent_uuid'] = obj.get('agent_uuid')
+
+        objections_results_list.extend(objections_results)
+
+    for obj in objections_results_list:
+        obj_type = obj.get('objection_type', 'other')
+        score = obj.get('resolution_quality', 0)
+        response_text = obj.get('seller_response', '')
+        
+        seller_id = obj.get('agent_uuid') or obj.get('seller_uuid') or 'Desconhecido'
+        seller_name = seller_id
+        
+        if seller_id in team_members_dict:
+            seller_name = team_members_dict[seller_id]
+
+        stats[obj_type]['count'] += 1
+        stats[obj_type]['total_score'] += score
+        stats[obj_type]['sellers'][seller_name].append(score)
+        
+        stats[obj_type]['responses'].append({
+            'seller': seller_name,
+            'score': score,
+            'text': response_text
+        })
+
+    formatted_data = []
+    
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação'
+    }
+
+    for otype, data in stats.items():
+        avg_score = data['total_score'] / data['count']
+        
+        seller_averages = {
+            seller: sum(scores)/len(scores) 
+            for seller, scores in data['sellers'].items()
+        }
+        
+        if not seller_averages:
+            continue
+
+        best_seller = max(seller_averages, key=seller_averages.get)
+        worst_seller = min(seller_averages, key=seller_averages.get)
+        
+        best_seller_responses = [r for r in data['responses'] if r['seller'] == best_seller]
+        
+        if best_seller_responses:
+
+            best_response_obj = max(best_seller_responses, key=lambda x: x['score'])
+            best_response_text = best_response_obj['text']
+        else:
+            best_response_text = max(data['responses'], key=lambda x: x['score'])['text']
+
+        formatted_data.append({
+            'type': type_map.get(otype, otype.capitalize()),
+            'freq': data['count'],
+            'score': int(avg_score),
+            'best': best_seller,
+            'worst': worst_seller,
+            'best_response': best_response_text
+        })
+
+    return sorted(formatted_data, key=lambda x: x['freq'], reverse=True)
+
 def calculate_agent_scores(agent, analysis_list):
     if not agent or not agent.external_uuid:
         return {}
