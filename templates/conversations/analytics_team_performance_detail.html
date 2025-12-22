@@ -74,11 +74,11 @@
         <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
             <thead>
                 <tr style="background-color: #00B4D8; color: white; text-align: center;">
-                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 20%;">Tipo</th>
-                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 15%;">Frequência</th>
-                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 15%;">Score Médio</th>
-                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Melhor Vendedor</th>
-                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Pior Vendedor</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 15%;">Tipo</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 10%;">Freq.</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 10%;">Score</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 20%;">Melhor Vendedor</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Melhor Prática (Exemplo)</th> 
                 </tr>
             </thead>
             <tbody>
@@ -101,13 +101,9 @@
                             border-radius: 12px; 
                             font-size: 0.85rem; 
                             font-weight: 700;
-                            {% if obj.score >= 70 %}
-                                background: #d1fae5; color: #047857; /* Verde */
-                            {% elif obj.score >= 50 %}
-                                background: #ffedd5; color: #c2410c; /* Laranja */
-                            {% else %}
-                                background: #fee2e2; color: #b91c1c; /* Vermelho */
-                            {% endif %}
+                            {% if obj.score >= 70 %} background: #d1fae5; color: #047857;
+                            {% elif obj.score >= 50 %} background: #ffedd5; color: #c2410c;
+                            {% else %} background: #fee2e2; color: #b91c1c; {% endif %}
                         ">
                             {{ obj.score }}
                         </span>
@@ -115,13 +111,17 @@
                     
                     <td style="padding: 12px; text-align: center; color: #047857; font-weight: 500; border-right: 1px solid #edf2f7;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <span>🏆</span> {{ obj.best }}
+                        {{ obj.best }}
                         </div>
                     </td>
-                    
-                    <td style="padding: 12px; text-align: center; color: #c53030;">
-                        {{ obj.worst }}
+
+                    <td style="padding: 12px; text-align: left; border-right: 1px solid #edf2f7; max-width: 250px;">
+                        <div style="font-style: italic; color: #555; font-size: 0.85rem; 
+                                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help;"
+                             title="{{ obj.best_response }}"> "{{ obj.best_response }}"
+                        </div>
                     </td>
+                
                 </tr>
                 {% endfor %}
             </tbody>
@@ -129,7 +129,7 @@
     </div>
     {% else %}
         <div style="padding: 3rem; text-align: center; color: #a0aec0; background: #f7fafc; border-radius: 6px;">
-            <p style="font-size: 1.1rem;">Nenhuma objeção registrada para esta equipe no período.</p>
+            <p style="font-size: 1.1rem;">Nenhuma objeção registrada.</p>
         </div>
     {% endif %}
 </div>
