@@ -275,3 +275,6 @@ AUTHENTICATION_BACKENDS = [
 # Hardcoded admin password hash (username: admin, password: TPVzYdZz2gNggOx-aVNk7w)
 ADMIN_PASSWORD_HASH = config('ADMIN_PASSWORD_HASH', default='2131a8f17431fb7d944a05e6d8c1877437bbe5003fa82810a0c6702e10fab378')
 
+# Chatbase Config
+CHATBASE_AGENT_ID = config('CHATBASE_AGENT_ID', default='')
+CHATBASE_SECRET_KEY = config('CHATBASE_SECRET_KEY', default='')
