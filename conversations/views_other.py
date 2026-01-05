@@ -444,12 +444,15 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
                             create_infobip_conversation_link
                             )
     from .analytics_metrics import ( get_stage_scores, 
-                                    get_metrics_for_agent)
+                                    get_metrics_for_agent,
+                                    get_metrics_for_team_members)
     
     if not user_profile:
         user_profile = getattr(request.user, 'profile', None)
 
     external_uuid = user_profile.external_uuid if user_profile else None
+    team_members = get_user_team_members(request.user)
+    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
 
     all_followups = get_followups_for_agent(external_uuid)
     all_links = get_link_tracking_from_agent(external_uuid)
@@ -519,7 +522,8 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     low_priority_tasks = low_priority_tasks[:10]
 
     metrics_data = get_metrics_for_agent(external_uuid)
-    scores_data = get_stage_scores(metrics_data)
+    members_data = get_metrics_for_team_members(team_uuids)
+    scores_data = get_stage_scores(metrics_data, members_data)
 
     context = {
         'title': 'Agent Workspace',
