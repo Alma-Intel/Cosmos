@@ -50,7 +50,6 @@
             {% include "components/kpi_box.html" with label="Follow-Ups" value=team_data.total_follow_ups|floatformat:0 %}
             {% include "components/kpi_box.html" with label="Nota Performance" value=team_data.avg_performance|floatformat:2|add:"%" %}
             {% include "components/kpi_box.html" with label="Conversão" value=team_data.conversion_rate|floatformat:1|add:"%" %}
-            <div style="background: white; border-radius: 6px;"></div>
 
             {% include "components/kpi_box.html" with label="Fez Follow-Up" value=team_data.follow_up_rate|floatformat:0|add:"%" %}
             {% include "components/kpi_box.html" with label="Tentou Reunião" value=team_data.meeting_attempt_rate|floatformat:0|add:"%" %}
