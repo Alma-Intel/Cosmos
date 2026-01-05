@@ -75,7 +75,7 @@ def get_events_for_conversation(conversation_id):
         return []
 
 
-def get_sales_stage_metrics(team_members_uuids):
+def get_sales_stage_metrics(team_members_uuids, start_date=None):
     LABEL_TRANSLATIONS = {
         'purchased_payment_confirmed': 'Pagamento Confirmado', 
         'active_client_support_request': 'Suporte de Cliente Ativo', 
@@ -103,6 +103,9 @@ def get_sales_stage_metrics(team_members_uuids):
                 print("Events database not configured")
             return {}
 
+        uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
+        params = [uuids_formatted]
+
         query_stages = """
             SELECT json->>'NEW_STAGE' as stage, COUNT(*) as count
             FROM events
@@ -118,6 +121,25 @@ def get_sales_stage_metrics(team_members_uuids):
             AND agent_uuid IN %s
         """
 
+        if start_date:
+            query_stages = """
+                SELECT json->>'NEW_STAGE' as stage, COUNT(*) as count
+                FROM events
+                WHERE event_type = 'SALES_STAGE_CHANGE'
+                AND agent_uuid IN %s
+                AND created_at >= %s
+                GROUP BY json->>'NEW_STAGE' 
+            """
+
+            query_total = """
+                SELECT COUNT(DISTINCT conversation_uuid)
+                FROM events
+                WHERE event_type = 'SALES_STAGE_CHANGE'
+                AND agent_uuid IN %s
+                AND created_at >= %s
+            """
+            params.append(start_date)
+
         with psycopg2.connect(
             host=events_db.get('HOST', 'localhost'),
             port=events_db.get('PORT', '5432'),
@@ -126,11 +148,10 @@ def get_sales_stage_metrics(team_members_uuids):
             password=events_db.get('PASSWORD', '')
         ) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
-                cursor.execute(query_stages, (uuids_formatted,))
+                cursor.execute(query_stages, tuple(params))
                 stage_results = cursor.fetchall()
 
-                cursor.execute(query_total, (uuids_formatted,))
+                cursor.execute(query_total, tuple(params))
                 total_conversations_count = cursor.fetchone()['count']
 
         
@@ -144,13 +165,14 @@ def get_sales_stage_metrics(team_members_uuids):
             
             if not raw_stage: continue
             label = LABEL_TRANSLATIONS.get(raw_stage, raw_stage.replace('_', ' ').title())
-            translated_stages[label] = count
-            raw_stages[raw_stage] = count
+            
+            translated_stages[label] = translated_stages.get(label, 0) + count
+            raw_stages[raw_stage] = raw_stages.get(raw_stage, 0) + count
 
             if raw_stage == 'purchased_payment_confirmed':
-                sales_count = count
+                sales_count += count
         
-        if not translated_stages:
+        if not translated_stages and not start_date:
             return mock_data
 
         conversion_rate = 0
@@ -169,7 +191,7 @@ def get_sales_stage_metrics(team_members_uuids):
         if settings.DEBUG: print(f"Unexpected error fetching stages: {e}")
         return mock_data
     
-def get_followups_detection(team_members_uuids):
+def get_followups_detection(team_members_uuids, start_date=None):
     followups_detected = []
     try:
         if not team_members_uuids:
@@ -182,7 +204,8 @@ def get_followups_detection(team_members_uuids):
             return followups_detected
         
         uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
-        
+        params=[uuids_formatted]
+
         query = """
             SELECT json->>'FOLLOWUP_TRY' as followup_try, COUNT(*) as count
             FROM events
@@ -192,6 +215,18 @@ def get_followups_detection(team_members_uuids):
             ORDER BY count DESC
         """
 
+        if start_date:
+            query = """
+                SELECT json->>'FOLLOWUP_TRY' as followup_try, COUNT(*) as count
+                FROM events
+                WHERE event_type = 'FOLLOWUP_DETECTION'
+                AND agent_uuid IN %s
+                AND created_at >= %s
+                GROUP BY json->>'FOLLOWUP_TRY'
+                ORDER BY count DESC
+            """
+            params.append(start_date)
+
         with psycopg2.connect(
             host=events_db.get('HOST', 'localhost'),
             port=events_db.get('PORT', '5432'),
@@ -200,7 +235,7 @@ def get_followups_detection(team_members_uuids):
             password=events_db.get('PASSWORD', '')
         ) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (uuids_formatted,))
+                cursor.execute(query, tuple(params))
                 results = cursor.fetchall()
                 followups_detected = [dict(event) for event in results]
         
@@ -219,7 +254,7 @@ def get_followups_detection(team_members_uuids):
             print(f"Unexpected error fetching followups: {e}")
         return followups_detected
 
-def get_objections_events_for_team(team_members_uuids):
+def get_objections_events_for_team(team_members_uuids, start_date=None):
     try:
         if not team_members_uuids:
             return []
@@ -231,7 +266,8 @@ def get_objections_events_for_team(team_members_uuids):
             return []
         
         uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
-        
+        params = [uuids_formatted]
+
         query = """
             SELECT json->>'OBJECTION_TYPE' as objection_type, COUNT(*) as count
             FROM events
@@ -240,6 +276,18 @@ def get_objections_events_for_team(team_members_uuids):
             GROUP BY json->>'OBJECTION_DETECTION'
             ORDER BY count DESC
         """
+
+        if start_date:
+            query = """
+                SELECT json->>'OBJECTION_TYPE' as objection_type, COUNT(*) as count
+                FROM events
+                WHERE event_type = 'OBJECTION_DETECTION'
+                AND agent_uuid IN %s
+                AND created_at >= %s
+                GROUP BY json->>'OBJECTION_DETECTION'
+                ORDER BY count DESC
+            """
+            params.append(start_date)
         
         with psycopg2.connect(
             host=events_db.get('HOST', 'localhost'),
@@ -249,7 +297,7 @@ def get_objections_events_for_team(team_members_uuids):
             password=events_db.get('PASSWORD', '')
         ) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (uuids_formatted,))
+                cursor.execute(query, tuple(params))
                 results = cursor.fetchall()
                 events_list = [dict(event) for event in results]
 

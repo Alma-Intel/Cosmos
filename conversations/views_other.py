@@ -558,13 +558,20 @@ def _workspace_supervisor_view(request, profile):
     from .events_db import ( get_sales_stage_metrics )
     from .analytics_utils import ( get_clients_analysis )
     from .analytics_metrics import ( get_team_summary_stats )
+    from datetime import timedelta
+
+    try:
+        days_param = int(request.GET.get('days', 30))
+    except ValueError:
+        days_param = 30
+        
+    start_date = timezone.now() - timedelta(days=days_param)
     
     team_members = get_user_team_members(request.user)
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
-    team_summary = get_team_summary_stats(team_members)
+    team_summary = get_team_summary_stats(team_members, start_date)
 
-    sales_data = get_sales_stage_metrics(team_uuids)
-
+    sales_data = get_sales_stage_metrics(team_uuids, start_date)
     funnel_raw = sales_data.get('stages', {})
     sorted_items = sorted(funnel_raw.items(), key=lambda x: x[1], reverse=True)
 
@@ -594,6 +601,7 @@ def _workspace_supervisor_view(request, profile):
         'critical_count': len(critical_cases),
         'team_summary': team_summary,
         'top_critical_cases': critical_cases[:5],
+        'current_days': days_param
     }
     
     return render(request, 'conversations/workspace_supervisor.html', context)
@@ -644,7 +652,7 @@ def team_performance_detail(request):
 
     for member in team_members:
         analysis_list = get_metrics_for_agent(member.external_uuid, start_date=start_date)
-        agent_data = calculate_agent_scores(member, analysis_list)
+        agent_data = calculate_agent_scores(member, analysis_list, start_date=start_date)
         
         if not agent_data: continue
 

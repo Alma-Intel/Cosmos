@@ -283,7 +283,7 @@ def format_objection_data(objections_list, team_members_dict):
 
     return sorted(formatted_data, key=lambda x: x['freq'], reverse=True)
 
-def calculate_agent_scores(agent, analysis_list):
+def calculate_agent_scores(agent, analysis_list, start_date=None):
     if not agent or not agent.external_uuid:
         return {}
     
@@ -297,13 +297,13 @@ def calculate_agent_scores(agent, analysis_list):
         'uuid': agent_uuid
     }
 
-    sales_data = get_sales_stage_metrics([agent_uuid])
+    sales_data = get_sales_stage_metrics([agent_uuid], start_date=start_date)
     
     seller_data['total_conversations'] = sales_data.get('total_conversations', 0)
     seller_data['sale_stage_distribution'] = sales_data.get('raw_stages', {})
     seller_data['total_sales'] = sales_data.get('total_sales', 0)
 
-    followups = get_followups_detection([agent_uuid])
+    followups = get_followups_detection([agent_uuid], start_date=start_date)
     total_followups = sum(f.get('count', 0) for f in followups)
 
     seller_data['total_followups'] = total_followups
@@ -382,7 +382,7 @@ def calculate_agent_scores(agent, analysis_list):
     return seller_data
     
 
-def get_team_summary_stats(team_members):
+def get_team_summary_stats(team_members, start_date=None):
     from .analytics_metrics import get_metrics_for_agent, calculate_agent_scores
 
     aggregates = {
@@ -395,8 +395,8 @@ def get_team_summary_stats(team_members):
     }
 
     for member in team_members:
-        analysis_list = get_metrics_for_agent(member.external_uuid)
-        agent_data = calculate_agent_scores(member, analysis_list)
+        analysis_list = get_metrics_for_agent(member.external_uuid, start_date)
+        agent_data = calculate_agent_scores(member, analysis_list, start_date=start_date)
         
         if not agent_data: continue
 
