@@ -411,10 +411,28 @@ def clientes_list(request):
 @login_required
 def bots_list(request):
     """List all bots"""
+    from django.conf import settings
+    
+    bots = [
+        {
+            'uuid': 'bot_001',
+            'name': 'MedCof Assistente Virtual',
+            'description': 'Responsável por resolução de dúvidas e encaminhamento de leads para o time de vendas da MedCof.',
+            'platform': 'Chatbase',
+            'url': 'https://www.chatbase.co/chatbot-iframe/',
+            'status': 'active',
+            'chatbase_id': settings.CHATBASE_AGENT_ID,
+            'corporation': 'MedCof',
+            'created_at': '2026-01-05'
+        }
+    ]
+
     context = {
-        'title': 'Bots',
+        'title': 'Gerenciamento de Bots',
+        'bots': bots,
     }
-    return render(request, 'conversations/placeholder.html', context)
+    
+    return render(request, 'conversations/bots_list.html', context)
 
 
 @login_required
@@ -587,10 +605,18 @@ def team_performance_detail(request):
                                     calculate_agent_scores,
                                     get_objections_from_database,
                                     format_objection_data)
+    from datetime import timedelta
     
+    try:
+        days_param = int(request.GET.get('days', 30))
+    except ValueError:
+        days_param = 30
+        
+    start_date = timezone.now() - timedelta(days=days_param)
+
     team_members = get_user_team_members(request.user)
     user, _ = UserProfile.objects.get_or_create(user=request.user)
-    team_name = "Users Team"
+    team_name = None
 
     if user and user.team:
         if user.team.name is not None:
@@ -617,7 +643,7 @@ def team_performance_detail(request):
     sellers_analytics = []
 
     for member in team_members:
-        analysis_list = get_metrics_for_agent(member.external_uuid)
+        analysis_list = get_metrics_for_agent(member.external_uuid, start_date=start_date)
         agent_data = calculate_agent_scores(member, analysis_list)
         
         if not agent_data: continue
@@ -649,7 +675,7 @@ def team_performance_detail(request):
         team_conversion_rate = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
 
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
-    objection_list = get_objections_from_database(team_uuids)
+    objection_list = get_objections_from_database(team_uuids, start_date=start_date)
 
     team_members_dict = {}
     for member in team_members:
@@ -684,6 +710,7 @@ def team_performance_detail(request):
     context = {
         'title': 'Team Performance Analysis',
         'team_data': team_data,
+        'current_days': days_param,
     }
     
     return render(request, 'conversations/analytics_team_performance_detail.html', context)
