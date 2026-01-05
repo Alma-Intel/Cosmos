@@ -56,6 +56,54 @@ def get_metrics_for_agent(agent_uuid):
         print(f"Unexpected error fetching metrics: {e}")
         return []
 
+def get_metrics_for_team_members(team_members_uuids):
+    """ Get all team members performance metrics on database."""
+    if not team_members_uuids:
+        return []
+
+    try:
+        db_name = "analytics"
+        db_config = settings.DATABASES.get(db_name)
+        
+        if not db_config:
+            print(f"Error: Database {db_name} not configured.")
+            return []
+        
+        conn = psycopg2.connect(
+            host=db_config.get('HOST', 'localhost'),
+            port=db_config.get('PORT', '5432'),
+            database=db_config.get('NAME'),
+            user=db_config.get('USER'),
+            password=db_config.get('PASSWORD')
+        )
+        
+        table_name = getattr(settings, 'ANALYTICS_TABLE_NAME', 'analytics')
+        agent_id_col = getattr(settings, 'ANALYTICS_AGENT_ID_COLUMN', 'agent_uuid')
+        timestamp_col = getattr(settings, 'ANALYTICS_TIMESTAMP_COLUMN', 'created_at')
+        
+        query = f"""
+            SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, {timestamp_col}, agent_uuid
+            FROM {table_name}
+            WHERE {agent_id_col} IN %s
+            ORDER BY {timestamp_col} ASC
+        """
+        
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(query, (tuple(str(uid) for uid in team_members_uuids),))
+        
+        metrics = cursor.fetchall()
+        
+        metrics_list = [dict(row) for row in metrics]
+        
+        cursor.close()
+        conn.close()
+        
+        return metrics_list
+        
+    except Exception as e:
+        print(f"Unexpected error fetching metrics: {e}")
+        return []
+
 
 def get_objections_from_database(team_members_uuids):
     objections_detected = []
@@ -159,7 +207,10 @@ def format_objection_data(objections_list, team_members_dict):
         'competitor': 'Concorrente', 
         'product_fit': 'Adequação', 
         'other': 'Outro',
-        'hesitation': 'Hesitação'
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
     }
 
     for otype, data in stats.items():
@@ -338,7 +389,7 @@ def get_team_summary_stats(team_members):
         'avg_performance': round(aggregates['sum_performance'] / num_agents, 2)
     }
 
-def get_stage_scores(analysis_list):
+def get_stage_scores(analysis_list, members_analysis=None):
     LABEL_TRANSLATIONS = {
         'closing': 'Fechamento',
         'connection': 'Conexão',
@@ -348,6 +399,7 @@ def get_stage_scores(analysis_list):
 
     labels = []
     agent_data = []
+    raw_keys_order = []
 
     for analysis in analysis_list:
         analysis_type = analysis.get('analysis_type', '')
@@ -355,18 +407,42 @@ def get_stage_scores(analysis_list):
         
         if analysis_type == "STAGE_SCORE":
             for key, value in results.items():
-                translated_label = LABEL_TRANSLATIONS.get(key, key.replace('_', ' ').title())
+                raw_keys_order.append(key)
                 
+                translated_label = LABEL_TRANSLATIONS.get(key, key.replace('_', ' ').title())
                 labels.append(translated_label)
+                
                 agent_data.append(value)
             break
 
-    team_avg_temp = [50 for _ in labels]
+    team_avg_data = []
+
+    if members_analysis and raw_keys_order:
+        team_scores_accumulator = defaultdict(list)
+
+        for member_record in members_analysis:
+            if member_record.get('analysis_type') == "STAGE_SCORE":
+                member_result = member_record.get('result', {})
+                
+                for k, v in member_result.items():
+                    if isinstance(v, (int, float)):
+                        team_scores_accumulator[k].append(v)
+
+        for key in raw_keys_order:
+            scores_list = team_scores_accumulator.get(key, [])
+            if scores_list:
+                avg = sum(scores_list) / len(scores_list)
+                team_avg_data.append(round(avg, 1))
+            else:
+                team_avg_data.append(0)
+    
+    if not team_avg_data:
+        team_avg_data = [0] * len(agent_data)
 
     metrics_data = {
         'labels': labels,
         'agent_data': agent_data,
-        'team_avg': team_avg_temp,
+        'team_avg': team_avg_data 
     }
     
     return metrics_data
