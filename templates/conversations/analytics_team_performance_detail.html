@@ -58,7 +58,6 @@
             {% include "components/kpi_box.html" with label="Pediu Indicação" value=team_data.referral_request_rate|floatformat:0|add:"%" %}
             {% include "components/kpi_box.html" with label="Converteu Indicação" value=team_data.referral_conversion_rate|floatformat:0|add:"%" %}
             {% include "components/kpi_box.html" with label="Resolveu Objeções" value=team_data.objection_resolution_rate|floatformat:0|add:"%" %}
-            {% include "components/kpi_box.html" with label="Msgs por Vendedor" value=team_data.avg_seller_messages|floatformat:1 %}
             {% include "components/kpi_box.html" with label="Ofereceu Desconto" value=team_data.discount_strategy_rate|floatformat:0|add:"%" %}
             
         </div>
