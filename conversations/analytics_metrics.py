@@ -8,8 +8,8 @@ from .events_db import (
     get_followups_detection
 )
 
-def get_metrics_for_agent(agent_uuid):
-    """[WIP] Get an agent performance metrics on database."""
+def get_metrics_for_agent(agent_uuid, start_date=None):
+    """Get an agent performance metrics on database."""
     if not agent_uuid:
         return []
 
@@ -33,15 +33,27 @@ def get_metrics_for_agent(agent_uuid):
         agent_id_col = getattr(settings, 'ANALYTICS_AGENT_ID_COLUMN', 'agent_uuid')
         timestamp_col = getattr(settings, 'ANALYTICS_TIMESTAMP_COLUMN', 'created_at')
         
+        params = [str(agent_uuid)]
+
         query = f"""
             SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, {timestamp_col}, agent_uuid
             FROM {table_name}
             WHERE {agent_id_col} = %s
             ORDER BY {timestamp_col} ASC
         """
+
+        if start_date:
+            query = f"""
+                SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, {timestamp_col}, agent_uuid
+                FROM {table_name}
+                WHERE {agent_id_col} = %s
+                AND {timestamp_col} >= %s
+                ORDER BY {timestamp_col} ASC
+            """
+            params.append(start_date)
         
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (str(agent_uuid),))
+        cursor.execute(query, tuple(params))
         
         metrics = cursor.fetchall()
         
@@ -56,7 +68,7 @@ def get_metrics_for_agent(agent_uuid):
         print(f"Unexpected error fetching metrics: {e}")
         return []
 
-def get_metrics_for_team_members(team_members_uuids):
+def get_metrics_for_team_members(team_members_uuids, start_date=None):
     """ Get all team members performance metrics on database."""
     if not team_members_uuids:
         return []
@@ -81,15 +93,27 @@ def get_metrics_for_team_members(team_members_uuids):
         agent_id_col = getattr(settings, 'ANALYTICS_AGENT_ID_COLUMN', 'agent_uuid')
         timestamp_col = getattr(settings, 'ANALYTICS_TIMESTAMP_COLUMN', 'created_at')
         
+        params = [tuple(str(uid) for uid in team_members_uuids)]
+
         query = f"""
             SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, {timestamp_col}, agent_uuid
             FROM {table_name}
             WHERE {agent_id_col} IN %s
             ORDER BY {timestamp_col} ASC
         """
+
+        if start_date:
+            query = f"""
+                SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, {timestamp_col}, agent_uuid
+                FROM {table_name}
+                WHERE {agent_id_col} IN %s
+                AND {timestamp_col} >= %s
+                ORDER BY {timestamp_col} ASC
+            """
+            params.append(start_date)
         
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (tuple(str(uid) for uid in team_members_uuids),))
+        cursor.execute(query, tuple(params))
         
         metrics = cursor.fetchall()
         
@@ -105,7 +129,7 @@ def get_metrics_for_team_members(team_members_uuids):
         return []
 
 
-def get_objections_from_database(team_members_uuids):
+def get_objections_from_database(team_members_uuids, start_date=None):
     objections_detected = []
     try:
         if not team_members_uuids:
@@ -119,7 +143,8 @@ def get_objections_from_database(team_members_uuids):
             return objections_detected
         
         uuids_formatted = tuple(str(uid) for uid in team_members_uuids)
-        
+        params = [uuids_formatted]
+
         query = """
             SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, created_at, agent_uuid
             FROM analytics
@@ -127,6 +152,17 @@ def get_objections_from_database(team_members_uuids):
             AND analysis_type = 'SALES_PERFORMANCE'
             ORDER BY created_at ASC
         """
+
+        if start_date:
+            query = """
+                SELECT uuid, conversation_uuid, analysis_type, result, alma_internal_organization, created_at, agent_uuid
+                FROM analytics
+                WHERE agent_uuid IN %s
+                AND analysis_type = 'SALES_PERFORMANCE'
+                AND created_at >= %s
+                ORDER BY created_at ASC
+            """
+            params.append(start_date)
 
         with psycopg2.connect(
             host=analytics_db.get('HOST', 'localhost'),
@@ -136,7 +172,7 @@ def get_objections_from_database(team_members_uuids):
             password=analytics_db.get('PASSWORD', '')
         ) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, (uuids_formatted,))
+                cursor.execute(query, tuple(params))
                 results = cursor.fetchall()
                 objections_detected = [dict(event) for event in results]
         
@@ -498,13 +534,3 @@ def get_sentiment_analysis(analysis_list):
                 sentiment_analysis_list.append(sentiment_analysis)
 
     return sentiment_analysis_list
-
-
-def get_metrics_for_agent_mock(agent_uuid):
-    metrics_data = {
-        'labels': ['Vendas', 'Conversão', 'Tempo Resp.', 'NPS', 'Retenção', 'Volume'],
-        'agent_data': [85, 70, 90, 88, 60, 75],
-        'team_avg': [70, 65, 70, 80, 70, 70],
-    }
-
-    return metrics_data
