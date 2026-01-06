@@ -415,7 +415,8 @@ def bots_list(request):
     from .bots import get_JWT_from_backend
 
     token = get_JWT_from_backend(request.user)
-    
+    chatbase_id = settings.CHATBASE_AGENT_ID
+
     bots = [
         {
             'uuid': 'bot_001',
@@ -424,7 +425,7 @@ def bots_list(request):
             'platform': 'Chatbase',
             'url': 'https://www.chatbase.co/chatbot-iframe/',
             'status': 'active',
-            'chatbase_id': settings.CHATBASE_AGENT_ID,
+            'chatbase_id': chatbase_id,
             'corporation': 'MedCof',
             'created_at': '2026-01-05'
         }
