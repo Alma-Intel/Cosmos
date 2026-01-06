@@ -11,8 +11,8 @@
     <div style="display: flex; flex-direction: column; gap: 1rem;">
         {% for bot in bots %}
         <div class="bot-card" 
-             onclick="loadChat('{{ bot.chatbase_id }}', '{{ bot.name }}', '{{ bot.platform }}')"
-             style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; border-left: 4px solid {% if bot.status == 'active' %}#667eea{% else %}#ecc94b{% endif %};">
+            onclick="loadChat('{{ bot.chatbase_id }}', '{{ bot.name }}', '{{ bot.platform }}', '{{ bot.url }}', '{{ token }}')"
+            style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; border-left: 4px solid {% if bot.status == 'active' %}#667eea{% else %}#ecc94b{% endif %};">
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                 <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem;">{{ bot.name }}</h3>
@@ -60,7 +60,7 @@
 </div>
 
 <script>
-    function loadChat(botId, botName, botPlatform, botUrl) {
+    function loadChat(botId, botName, botPlatform, botUrl, token) {
         const frame = document.getElementById('chatbase-frame');
         const placeholder = document.getElementById('placeholder-msg');
         const title = document.getElementById('preview-title');
@@ -71,19 +71,31 @@
             alert('No Chat ID configured for this bot.');
             return;
         }
-        
-        console.log("Loading bot ID:");
-        console.log(botId);
 
         title.innerText = "Testando: " + botName;
         placeholder.style.display = 'none';
         frame.style.display = 'block';
-        frame.src = `${botUrl}${cleanId}`;
+
+        let finalUrl = `${botUrl}${cleanId}`;
+        const params = [];
 
         if (botPlatform.toLowerCase() === 'chatbase'){
-            frame.src = `${botUrl}${cleanId}?t=${new Date().getTime()}`;
+            params.push(`t=${new Date().getTime()}`);
+            if (token && token !== 'None' && token !== '') {
+                params.push(`token=${token}`);
+            }
+
+            if (params.length > 0) {
+                finalUrl += `?${params.join('&')}`;
+            }
+
+            frame.src = finalUrl;
+        
+        } else {
+            frame.src = `${botUrl}${cleanId}`;
         }
     }
+
 </script>
 
 <style>
