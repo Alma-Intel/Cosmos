@@ -88,12 +88,11 @@
             if (params.length > 0) {
                 finalUrl += `?${params.join('&')}`;
             }
+        } 
 
-            frame.src = finalUrl;
-        
-        } else {
-            frame.src = `${botUrl}${cleanId}`;
-        }
+        frame.src = finalUrl;
+
+        console.log("Final URL: " + finalUrl);
     }
 
 </script>
