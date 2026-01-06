@@ -605,7 +605,9 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
 def _workspace_supervisor_view(request, profile):
     from .events_db import ( get_sales_stage_metrics )
     from .analytics_utils import ( get_clients_analysis )
-    from .analytics_metrics import ( get_team_summary_stats )
+    from .analytics_metrics import ( get_team_summary_stats, 
+                                    get_objections_from_database,
+                                    format_objection_data )
     from datetime import timedelta
 
     try:
@@ -623,13 +625,12 @@ def _workspace_supervisor_view(request, profile):
     funnel_raw = sales_data.get('stages', {})
     sorted_items = sorted(funnel_raw.items(), key=lambda x: x[1], reverse=True)
 
-    clients_data, _, global_analyses = get_clients_analysis()
-    
     funnel_data = {
         'labels': [item[0] for item in sorted_items],
         'data': [item[1] for item in sorted_items]
     }
 
+    clients_data, _, global_analyses = get_clients_analysis()
     critical_cases = []
     cases = global_analyses.get('critical_cases', []) if global_analyses else []
     
@@ -641,6 +642,58 @@ def _workspace_supervisor_view(request, profile):
         ]
         critical_cases.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
 
+    raw_objections = get_objections_from_database(team_uuids, start_date=start_date)
+    
+    team_members_dict = {
+        str(p.external_uuid): (p.user.first_name or p.user.username) 
+        for p in team_members 
+        if p.external_uuid
+    }
+    
+    critical_objections_list = []
+    INFOBIP_BASE_URL = "https://portal-ny2.infobip.com/conversations/my-work?conversationId="
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
+    }
+
+    for row in raw_objections:
+        result = row.get('result', {})
+        details = result.get('objection_details', {}).get('objections_detected', [])
+        
+        agent_name = team_members_dict.get(row['agent_uuid'], row['agent_uuid'])
+        created_at = row.get('created_at')
+
+        conversation_uuid = row.get('conversation_uuid')
+
+        for item in details:
+            score = item.get('resolution_quality', 0)
+            
+            if score < 60:
+                obj_type = item.get('objection_type', 'other')
+                
+                critical_objections_list.append({
+                    'agent': agent_name,
+                    'type': type_map.get(obj_type, obj_type.capitalize()),
+                    'score': score,
+                    'text': item.get('objection_text', ''),
+                    'response': item.get('seller_response', ''),
+                    'time': created_at,
+                    'conversation_uuid': row.get('conversation_uuid'),
+                    'url': f"{INFOBIP_BASE_URL}{conversation_uuid}" if conversation_uuid else "#"
+                })
+
+    critical_objections_list.sort(key=lambda x: (x['score'], x['time']), reverse=False)
+    top_critical_objections = critical_objections_list[:5]
+
     context = {
         'title': 'ALMA COSMOS - Supervisor Workspace',
         'current_view': 'supervisor',
@@ -649,7 +702,9 @@ def _workspace_supervisor_view(request, profile):
         'critical_count': len(critical_cases),
         'team_summary': team_summary,
         'top_critical_cases': critical_cases[:5],
-        'current_days': days_param
+        'current_days': days_param,
+        'cases_to_verify': top_critical_objections, 
+        'objections_alert_count': len(critical_objections_list)
     }
     
     return render(request, 'conversations/workspace_supervisor.html', context)

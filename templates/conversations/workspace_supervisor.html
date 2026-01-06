@@ -100,46 +100,59 @@
             {% endif %}
         </div>
 
-    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #c62828;">
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #e53e3e; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
-                    <h2 style="font-size: 1.3rem; margin: 0; color: #c62828; display: flex; align-items: center; gap: 8px;">
-                        Casos para Verificação
+                    <h2 style="font-size: 1.3rem; margin: 0; color: #e53e3e; display: flex; align-items: center; gap: 8px;">
+                        Objeções Detectadas
                     </h2>
-                    <p style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">Clientes precisando de atenção imediata</p>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">Casos para verificação.</p>
                 </div>
-                <div style="background: #ffebee; color: #c62828; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem;">
-                    {{ critical_count }}
+                <div style="background: #fff5f5; color: #e53e3e; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem;">
+                    {{ objections_alert_count }}
                 </div>
             </div>
 
-            {% if top_critical_cases %}
-                <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
-                    {% for case in top_critical_cases %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #fafafa; border-radius: 6px; border: 1px solid #eee;">
-                        <div>
-                            <strong style="color: #333; display: block;">{{ case.client_name }}</strong>
-                            <span style="font-size: 0.8rem; color: #888;">Última interação: {{ case.days_since_last_interaction|default:"N/A" }} dias atrás</span>
+            {% if cases_to_verify %}
+                <ul style="list-style: none; padding: 0; margin: 0; flex: 1;">
+                    {% for case in cases_to_verify %}
+                    <li style="border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="max-width: 65%;">
+                            <strong style="color: #2d3748; font-size: 0.95rem; display: block;">{{ case.type }}</strong>
+                            
+                            <span style="font-size: 0.85rem; color: #718096; display: block; margin-top: 2px;">
+                                Vendedor: {{ case.agent }}
+                            </span>
+
+                            <span style="font-size: 0.75rem; color: #a0aec0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: help;" title="{{ case.text }}">
+                                "{{ case.text }}"
+                            </span>
                         </div>
+                        
                         <div style="text-align: right;">
-                            <span style="display: block; font-weight: bold; color: #c62828;">Score: {{ case.risk_score }}</span>
-                            <span style="font-size: 0.8rem; color: #666;">{{ case.trend|default:"-" }}</span>
+                            <span style="display: block; font-weight: bold; font-size: 0.9rem; color: #e53e3e;">
+                                Score: {{ case.score }}
+                            </span>
+                            
+                            <span style="font-size: 0.75rem; color: #a0aec0; display: block; margin-bottom: 4px;">
+                                {{ case.time|date:"d/m H:i" }}
+                            </span>
+
+                            <a href="{{ case.url }}" style="font-size: 0.8rem; color: #3182ce; text-decoration: none; font-weight: 600;">
+                                Verificar &rarr;
+                            </a>
                         </div>
-                    </div>
+                    </li>
                     {% endfor %}
-                </div>
+                </ul>
+
             {% else %}
-                <div style="padding: 1.5rem; text-align: center; color: #888; font-style: italic;">
-                    Nenhum caso crítico detectado hoje.
+                <div style="padding: 1.5rem; text-align: center; color: #888; font-style: italic; margin-top: auto; margin-bottom: auto;">
+                    <span style="display: block; font-size: 2rem; margin-bottom: 10px;">✅</span>
+                    Nenhuma objeção crítica encontrada neste período.
                 </div>
             {% endif %}
-
-            <a href="/analytics/critical-cases/" style="display: block; text-align: center; padding: 0.75rem; background: #c62828; color: #ffebee; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s;"
-            onmouseover="this.style.background='#ad2323'"
-            onmouseout="this.style.background='#c62828'">
-                Ver Análise Detalhada ({{ critical_count }} casos) &rarr;
-            </a>
-    </div>
+        </div>
     
         <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); grid-column: span 2;">
             <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #667eea;">
