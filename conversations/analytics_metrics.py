@@ -202,37 +202,30 @@ def format_objection_data(objections_list, team_members_dict):
         'responses': []
     })
 
-    objections_results_list = []
-
     for obj in objections_list:
         result = obj.get('result', {})
         objections_results = result.get('objection_details', {}).get('objections_detected', [])
 
-        for item in objections_results:
-            item['agent_uuid'] = obj.get('agent_uuid')
-
-        objections_results_list.extend(objections_results)
-
-    for obj in objections_results_list:
-        obj_type = obj.get('objection_type', 'other')
-        score = obj.get('resolution_quality', 0)
-        response_text = obj.get('seller_response', '')
-        
         seller_id = obj.get('agent_uuid') or obj.get('seller_uuid') or 'Desconhecido'
         seller_name = seller_id
-        
         if seller_id in team_members_dict:
             seller_name = team_members_dict[seller_id]
 
-        stats[obj_type]['count'] += 1
-        stats[obj_type]['total_score'] += score
-        stats[obj_type]['sellers'][seller_name].append(score)
-        
-        stats[obj_type]['responses'].append({
-            'seller': seller_name,
-            'score': score,
-            'text': response_text
-        })
+        for item in objections_results:
+
+            obj_type = item.get('objection_type', 'other')
+            score = item.get('resolution_quality', 0)
+            response_text = item.get('seller_response', '')
+
+            stats[obj_type]['count'] += 1
+            stats[obj_type]['total_score'] += score
+            stats[obj_type]['sellers'][seller_name].append(score)
+            
+            stats[obj_type]['responses'].append({
+                'seller': seller_name,
+                'score': score,
+                'text': response_text
+            })
 
     formatted_data = []
     
