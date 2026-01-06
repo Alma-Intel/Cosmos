@@ -431,7 +431,7 @@ def bots_list(request):
     ]
 
     context = {
-        'title': 'Gerenciamento de Bots',
+        'title': 'ALMA COSMOS - Bots',
         'bots': bots,
         'token': token
     }
@@ -590,7 +590,7 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     scores_data = get_stage_scores(metrics_data, members_data)
 
     context = {
-        'title': 'Agent Workspace',
+        'title': 'ALMA COSMOS - Agent Workspace',
         'high_priority_tasks': high_priority_tasks,
         'metrics': scores_data,
         'can_switch_view': can_switch_view,
@@ -641,7 +641,7 @@ def _workspace_supervisor_view(request, profile):
         critical_cases.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
 
     context = {
-        'title': 'Supervisor Workspace',
+        'title': 'ALMA COSMOS - Supervisor Workspace',
         'current_view': 'supervisor',
         'can_switch_view': True,
         'funnel_data': funnel_data,
