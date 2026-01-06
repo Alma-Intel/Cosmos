@@ -412,6 +412,9 @@ def clientes_list(request):
 def bots_list(request):
     """List all bots"""
     from django.conf import settings
+    from .bots import get_JWT_from_backend
+
+    token = get_JWT_from_backend(request.user)
     
     bots = [
         {
@@ -430,6 +433,7 @@ def bots_list(request):
     context = {
         'title': 'Gerenciamento de Bots',
         'bots': bots,
+        'token': token
     }
     
     return render(request, 'conversations/bots_list.html', context)
@@ -464,9 +468,17 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     from .analytics_metrics import ( get_stage_scores, 
                                     get_metrics_for_agent,
                                     get_metrics_for_team_members)
+    from datetime import timedelta
     
     if not user_profile:
         user_profile = getattr(request.user, 'profile', None)
+
+    try:
+        days_param = int(request.GET.get('days', 30))
+    except ValueError:
+        days_param = 30
+        
+    start_date = timezone.now() - timedelta(days=days_param)
 
     external_uuid = user_profile.external_uuid if user_profile else None
     team_members = get_user_team_members(request.user)
@@ -475,33 +487,66 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     all_followups = get_followups_for_agent(external_uuid)
     all_links = get_link_tracking_from_agent(external_uuid)
 
+    #print(f"Fetched {len(all_followups)} follow-ups and {len(all_links)} links for agent {external_uuid}")
+
     followups_dict = {}
 
     for link in all_links:
         baseUrl = "https://followupsbot-prod.up.railway.app/r/"
         link_url = link['original_url']
         slug = link['slug']
+        #print(f"Link URL: {link_url}, Slug: {slug}")
         if link_url:
             conversation_id = get_conversation_id(link_url, "conversationId=", "&")
+            
             if conversation_id:
+                clean_id = str(conversation_id).strip().lower().replace('-', '')
+
                 if slug:
-                    followups_dict[conversation_id] = baseUrl + slug
+                    followups_dict[clean_id] = baseUrl + slug
                 else:
-                    followups_dict[conversation_id] = link_url
+                    followups_dict[clean_id] = link_url
+
+    #if len(followups_dict) > 0:
+    #    print(f"[DEBUG] example of a key in dict: {list(followups_dict.keys())[0]}")
+    #print(f"[DEBUG] Followups dict length: {len(followups_dict)}")
+    #print(followups_dict)
 
     now = timezone.now()
     end = (now + timezone.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    high_priority_limit = 10
+    low_priority_limit = 15
 
     high_priority_tasks = []
     low_priority_tasks = []
     calendar_events = []
 
+    count_total = 0
+    #count_sem_id = 0
+    #count_sem_link = 0
+    #count_com_link = 0
+
     for task in all_followups:
-        conversation_id_str = str(task['conversation_uuid'])
-        task['original_url'] = followups_dict.get(conversation_id_str)
+        count_total += 1
+        raw_uuid = task.get('conversation_uuid')
+
+        if raw_uuid:
+            conversation_id_key = str(raw_uuid).strip().lower().replace('-', '')
+            task['original_url'] = followups_dict.get(conversation_id_key)
+            #if not task['original_url'] and count_sem_link == 0:
+            #    print(f"[DEBUG FAIL] Task UUID normalized: {conversation_id_key}")
+
+        else:
+            #count_sem_id +=1
+            task['original_url'] = None
 
         if not task['original_url']:
-            task['original_url'] = create_infobip_conversation_link(conversation_id_str)
+            #count_sem_link += 1
+            #continue
+            task['original_url'] = create_infobip_conversation_link(str(raw_uuid or ''))
+        
+        #count_com_link += 1
 
         task_date = task['follow_up_date']
 
@@ -509,16 +554,17 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
             task_date = timezone.make_aware(task_date)
             task['follow_up_date'] = task_date
 
-        is_high_priority = False 
-
         if task_date <= now and task['score'] >= 700:
-            if len(high_priority_tasks) <= 5:
+            if len(high_priority_tasks) < high_priority_limit:
                 high_priority_tasks.append(task)
-                is_high_priority = True
-
-        if not is_high_priority:
-            if task_date <= end:
+            else:
                 low_priority_tasks.append(task)
+
+        else:
+            low_priority_tasks.append(task)
+
+    print(f"High priority tasks: {len(high_priority_tasks)}, Low priority tasks: {len(low_priority_tasks)}")
+    #print(f"Total tasks: {count_total}, With link: {count_com_link}, Without link: {count_sem_link}, Without ID: {count_sem_id} ")
 
     all_tasks_for_calendar = high_priority_tasks + low_priority_tasks
 
@@ -534,13 +580,13 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
         calendar_events.append(event)
 
     high_priority_tasks.sort(key=lambda x: (-x['score'], x['follow_up_date']))
-    high_priority_tasks = high_priority_tasks[:5]
+    high_priority_tasks = high_priority_tasks[:high_priority_limit]
 
     low_priority_tasks.sort(key=lambda x: (x['follow_up_date'], -x['score']))
-    low_priority_tasks = low_priority_tasks[:10]
+    low_priority_tasks = low_priority_tasks[:low_priority_limit]
 
-    metrics_data = get_metrics_for_agent(external_uuid)
-    members_data = get_metrics_for_team_members(team_uuids)
+    metrics_data = get_metrics_for_agent(external_uuid, start_date=start_date)
+    members_data = get_metrics_for_team_members(team_uuids, start_date=start_date)
     scores_data = get_stage_scores(metrics_data, members_data)
 
     context = {
@@ -549,7 +595,8 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
         'metrics': scores_data,
         'can_switch_view': can_switch_view,
         'current_view': 'agent',
-        'calendar_events_json': json.dumps(calendar_events)
+        'calendar_events_json': json.dumps(calendar_events),
+        'current_days': days_param,
     }
     
     return render(request, 'conversations/workspace_agent.html', context)
