@@ -645,7 +645,7 @@ def _workspace_supervisor_view(request, profile):
     raw_objections = get_objections_from_database(team_uuids, start_date=start_date)
     
     team_members_dict = {
-        str(p.external_uuid): (p.user.first_name or p.user.username) 
+        str(p.external_uuid): (p.user.first_name or p.user.username or p.user.get_display_name()) 
         for p in team_members 
         if p.external_uuid
     }
@@ -790,7 +790,7 @@ def team_performance_detail(request):
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     objection_list = get_objections_from_database(team_uuids, start_date=start_date)
     team_members_dict = {
-        str(p.external_uuid): (p.user.first_name or p.user.username or member.get_display_name()) 
+        str(p.external_uuid): (p.user.first_name or p.user.username or p.user.get_display_name()) 
         for p in team_members 
         if p.external_uuid
     }
