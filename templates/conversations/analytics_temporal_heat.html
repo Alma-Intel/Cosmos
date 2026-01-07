@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .heatmap-container {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .heatmap-controls {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .heatmap-controls label {
+        font-weight: 500;
+        margin-right: 0.5rem;
+        color: #333;
+    }
+    
+    .heatmap-controls select {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        background: white;
+        cursor: pointer;
+    }
+    
+    .heatmap-controls select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .heatmap-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 auto;
+    }
+    
+    .heatmap-table th {
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #333;
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .heatmap-table td {
+        padding: 0.5rem;
+        text-align: center;
+        font-size: 0.8rem;
+        border: 1px solid #e0e0e0;
+        position: relative;
+        min-width: 40px;
+    }
+    
+    .heatmap-cell {
+        display: block;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-weight: 500;
+        color: #333;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .heatmap-cell:hover {
+        transform: scale(1.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10;
+        position: relative;
+    }
+    
+    .day-label {
+        font-weight: 600;
+        text-align: right;
+        padding-right: 1rem;
+        color: #333;
+        background: #f8f9fa;
+    }
+    
+    .legend {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .legend-label {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .legend-gradient {
+        flex: 1;
+        height: 30px;
+        background: linear-gradient(to right, #e3f2fd, #1976d2);
+        border-radius: 4px;
+        position: relative;
+    }
+    
+    .legend-values {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: #888;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #333;">{{ title }}</h1>
+            <a href="{% url 'analytics' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+                ← Back to Analytics Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+{% if stats.row_count > 0 %}
+<div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #333;">Summary Statistics</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Total Records</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ stats.row_count|floatformat:0 }}</div>
+        </div>
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Columns</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ stats.column_count }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Heatmap -->
+{% if has_heatmap_data and heatmap_data %}
+<div class="heatmap-container">
+    <div class="heatmap-controls">
+        <label for="metric-select">Metric:</label>
+        <select id="metric-select" onchange="window.location.href='?metric=' + this.value">
+            {% for metric_display in available_metrics_display %}
+            <option value="{{ metric_display.value }}" {% if metric_display.value == metric_type %}selected{% endif %}>
+                {{ metric_display.display }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="heatmap-table">
+            <thead>
+                <tr>
+                    <th class="day-label">Day / Hour</th>
+                    {% for hour in "012345678901234567890123"|make_list %}
+                    <th>{{ forloop.counter0 }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for day_row in heatmap_data %}
+                <tr>
+                    <td class="day-label">{{ day_row.day_name }}</td>
+                    {% for hour_data in day_row.hours %}
+                    <td>
+                        <div class="heatmap-cell" 
+                             data-value="{{ hour_data.value }}"
+                             data-day="{{ day_row.day_name }}"
+                             data-hour="{{ hour_data.hour }}"
+                             title="{{ day_row.day_name }}, Hour {{ hour_data.hour }}: {{ hour_data.value|floatformat:0 }}">
+                            {{ hour_data.value|floatformat:0 }}
+                        </div>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="legend">
+        <span class="legend-label">Intensity:</span>
+        <div style="flex: 1;">
+            <div class="legend-gradient"></div>
+            <div class="legend-values">
+                <span>{{ min_value|floatformat:0 }}</span>
+                <span>{{ max_value|floatformat:0 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div style="background: white; border-radius: 8px; padding: 3rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <p style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #999;">No heatmap data available</p>
+    <p style="font-size: 0.9rem; color: #999;">The dataset is empty or could not be loaded.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cells = document.querySelectorAll('.heatmap-cell');
+        const maxValue = {{ max_value|default:1 }};
+        
+        cells.forEach(function(cell) {
+            const value = parseFloat(cell.getAttribute('data-value')) || 0;
+            // Calculate opacity/intensity based on max value
+            const intensity = maxValue > 0 ? value / maxValue : 0;
+            
+            // Create color gradient from light blue to dark blue
+            const r = Math.round(25 + (227 - 25) * (1 - intensity));
+            const g = Math.round(118 + (242 - 118) * (1 - intensity));
+            const b = Math.round(210 + (253 - 210) * (1 - intensity));
+            
+            cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            
+            // Adjust text color for readability on dark backgrounds
+            if (intensity > 0.5) {
+                cell.style.color = '#fff';
+            } else {
+                cell.style.color = '#333';
+            }
+        });
+    });
+</script>
+{% endblock %}
+

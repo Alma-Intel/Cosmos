@@ -172,6 +172,66 @@ if not conversations_database_url or conversations_database_url.startswith('${{'
 # Database routing for conversations models
 DATABASE_ROUTERS = ['conversations.db_router.ConversationsRouter']
 
+# Fourth PostgreSQL database for followups
+# Try to get FOLLOWUPS_DATABASE_URL first (Railway format)
+followups_database_url = config('FOLLOWUPS_DATABASE_URL', default=None)
+
+if followups_database_url:
+    # Remove quotes if present
+    followups_database_url = followups_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if followups_database_url and not followups_database_url.startswith('${{'):
+        # Add followups database to DATABASES
+        DATABASES['followups'] = dj_database_url.parse(followups_database_url)
+    else:
+        followups_database_url = None
+
+if not followups_database_url or followups_database_url.startswith('${{'):
+    # Fall back to individual environment variables for followups database
+    DATABASES['followups'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('FOLLOWUPS_DB_NAME', default='followups_db'),
+        'USER': config('FOLLOWUPS_DB_USER', default='postgres'),
+        'PASSWORD': config('FOLLOWUPS_DB_PASSWORD', default=''),
+        'HOST': config('FOLLOWUPS_DB_HOST', default='localhost'),
+        'PORT': config('FOLLOWUPS_DB_PORT', default='5432'),
+    }
+
+# Followups database table name (configurable)
+FOLLOWUPS_TABLE_NAME = config('FOLLOWUPS_TABLE_NAME', default='follow_up')
+FOLLOWUPS_AGENT_ID_COLUMN = config('FOLLOWUPS_AGENT_ID_COLUMN', default='agent_uuid')
+FOLLOWUPS_TIMESTAMP_COLUMN = config('FOLLOWUPS_TIMESTAMP_COLUMN', default='follow_up_date')
+
+# Fifth PostgreSQL database for analytics
+# Try to get ANALYTICS_DATABASE_URL first (Railway format)
+analytics_database_url = config('ANALYTICS_DATABASE_URL', default=None)
+
+if analytics_database_url:
+    # Remove quotes if present
+    analytics_database_url = analytics_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if analytics_database_url and not analytics_database_url.startswith('${{'):
+        # Add analytics database to DATABASES
+        DATABASES['analytics'] = dj_database_url.parse(analytics_database_url)
+    else:
+        analytics_database_url = None
+
+if not analytics_database_url or analytics_database_url.startswith('${{'):
+    # Fall back to individual environment variables for analytics database
+    DATABASES['analytics'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('ANALYTICS_DB_NAME', default='followups_db'),
+        'USER': config('ANALYTICS_DB_USER', default='postgres'),
+        'PASSWORD': config('ANALYTICS_DB_PASSWORD', default=''),
+        'HOST': config('ANALYTICS_DB_HOST', default='localhost'),
+        'PORT': config('ANALYTICS_DB_PORT', default='5432'),
+    }
+
+# Analytics database table name (configurable)
+ANALYTICS_TABLE_NAME = config('ANALYTICS_TABLE_NAME', default='analytics')
+ANALYTICS_AGENT_ID_COLUMN = config('ANALYTICS_AGENT_ID_COLUMN', default='agent_uuid')
+ANALYTICS_TIMESTAMP_COLUMN = config('ANALYTICS_TIMESTAMP_COLUMN', default='created_at')
+
 # MongoDB Configuration
 # Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
 # Check for MONGO_URL first, then fall back to MONGODB_URL
@@ -243,3 +303,6 @@ AUTHENTICATION_BACKENDS = [
 # Hardcoded admin password hash (username: admin, password: TPVzYdZz2gNggOx-aVNk7w)
 ADMIN_PASSWORD_HASH = config('ADMIN_PASSWORD_HASH', default='2131a8f17431fb7d944a05e6d8c1877437bbe5003fa82810a0c6702e10fab378')
 
+# Chatbase Config
+CHATBASE_AGENT_ID = config('CHATBASE_AGENT_ID', default='')
+CHATBASE_SECRET_KEY = config('CHATBASE_SECRET_KEY', default='')

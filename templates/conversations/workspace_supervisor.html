@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block header_title %}ALMA COSMOS - Workspace{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    {% if can_switch_view %}
+        {% if current_view == 'agent' %}
+            <a href="?mode=supervisor" style="padding: 10px 20px; background: white; border: 1px solid #cbd5e0; color: #2d3748; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> Ir para Visão Supervisor
+            </a>
+        {% else %}
+            <a href="?mode=agent" style="padding: 10px 20px; background: white; border: 1px solid #cbd5e0; color: #2d3748; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span>👤</span> Voltar para Visão Agente
+            </a>
+        {% endif %}
+    {% endif %}
+    <form method="get" id="periodForm" style="display: flex; align-items: center; gap: 8px;">
+        {% for key, value in request.GET.items %}
+            {% if key != 'days' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+        {% endfor %}
+            
+        <label style="color: #666; font-size: 0.9rem;">Período:</label>
+        <select name="days" onchange="document.getElementById('periodForm').submit()" 
+                style="padding: 6px 12px; border: 1px solid #cbd5e0; border-radius: 6px; color: #4a5568; background: white; cursor: pointer;">
+            <option value="7" {% if current_days == 7 %}selected{% endif %}>Últimos 7 dias</option>
+            <option value="15" {% if current_days == 15 %}selected{% endif %}>Últimos 15 dias</option>
+            <option value="30" {% if current_days == 30 %}selected{% endif %}>Últimos 30 dias</option>
+            <option value="90" {% if current_days == 90 %}selected{% endif %}>Últimos 3 meses</option>
+            <option value="365" {% if current_days == 365 %}selected{% endif %}>Todo o período</option>
+        </select>
+    </form>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+    
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #667eea; display: flex; align-items: center; gap: 8px;">
+                Performance do Time
+            </h2>
+
+            {% if team_summary %}
+                <div style="flex: 1;">
+                    <div style="text-align: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f0f0f0;">
+                        <span style="display: block; font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">Score Médio Geral</span>
+                        <span style="font-size: 2.5rem; font-weight: 700; color: #667eea;">{{ team_summary.avg_performance|floatformat:1 }}</span>
+                        {% if team_summary.avg_performance > 80 %}
+                            <span style="font-size: 0.9rem; color: #48bb78; background: #f0fff4; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Ótimo
+                            </span>
+                        {% elif team_summary.avg_performance > 60 %}
+                            <span style="font-size: 0.9rem; color: #2b6cb0; background: #ebf8ff; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Bom
+                            </span>
+                        {% elif team_summary.avg_performance > 50 %}
+                            <span style="font-size: 0.9rem; color: #c05621; background: #fffaf0; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Médio
+                            </span>
+                        {% else %}
+                            <span style="font-size: 0.9rem; color: #c53030; background: #fff5f5; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                Ruim
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;">
+                        
+                        <div style="background: #f5f6ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Conversão</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.conversion_rate }}%</strong>
+                        </div>
+
+                        <div style="background: #f5f6ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Reuniões</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.total_meetings }}</strong>
+                        </div>
+
+                        <div style="background: #e8e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Conversas</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.total_conversations }}</strong>
+                        </div>
+
+                        <div style="background: #e8e8ff; padding: 0.75rem; border-radius: 6px; text-align: center;">
+                            <span style="display: block; font-size: 0.75rem; color: #5a5cd5; margin-bottom: 2px;">Follow-ups</span>
+                            <strong style="font-size: 1.1rem; color: #3c429a;">{{ team_summary.total_followups }}</strong>
+                        </div>
+
+                    </div>
+                </div>
+
+                <a href="{% url 'team_performance_detail' %}" style="display: block; text-align: center; padding: 0.75rem; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s; margin-top: auto;"
+                onmouseover="this.style.background='#485db9'"
+                onmouseout="this.style.background='#667eea'">
+                    Ver Relatório Completo &rarr;
+                </a>
+            {% else %}
+                <p style="color: #999;">Dados não disponíveis.</p>
+            {% endif %}
+        </div>
+
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #e53e3e; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.3rem; margin: 0; color: #e53e3e; display: flex; align-items: center; gap: 8px;">
+                        Objeções Detectadas
+                    </h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 0.25rem;">Casos para verificação.</p>
+                </div>
+                <div style="background: #fff5f5; color: #e53e3e; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem;">
+                    {{ objections_alert_count }}
+                </div>
+            </div>
+
+            {% if cases_to_verify %}
+                <ul style="list-style: none; padding: 0; margin: 0; flex: 1;">
+                    {% for case in cases_to_verify %}
+                    <li style="border-bottom: 1px solid #eee; padding: 12px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="max-width: 65%;">
+                            <strong style="color: #2d3748; font-size: 0.95rem; display: block;">{{ case.type }}</strong>
+                            
+                            <span style="font-size: 0.85rem; color: #718096; display: block; margin-top: 2px;">
+                                Vendedor: {{ case.agent }}
+                            </span>
+
+                            <span style="font-size: 0.75rem; color: #a0aec0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: help;" title="{{ case.text }}">
+                                "{{ case.text }}"
+                            </span>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            <span style="display: block; font-weight: bold; font-size: 0.9rem; color: #e53e3e;">
+                                Score: {{ case.score }}
+                            </span>
+                            
+                            <span style="font-size: 0.75rem; color: #a0aec0; display: block; margin-bottom: 4px;">
+                                {{ case.time|date:"d/m H:i" }}
+                            </span>
+
+                            <a href="{{ case.url }}" style="font-size: 0.8rem; color: #3182ce; text-decoration: none; font-weight: 600;">
+                                Verificar &rarr;
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+            {% else %}
+                <div style="padding: 1.5rem; text-align: center; color: #888; font-style: italic; margin-top: auto; margin-bottom: auto;">
+                    <span style="display: block; font-size: 2rem; margin-bottom: 10px;">✅</span>
+                    Nenhuma objeção crítica encontrada neste período.
+                </div>
+            {% endif %}
+        </div>
+    
+        <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); grid-column: span 2;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #667eea;">
+                Funil de Vendas do Time
+            </h2>
+            <div style="height: 300px; width: 100%;">
+                <canvas id="funnelChart"></canvas>
+            </div>
+    </div>
+
+
+    </div>
+
+</div>
+
+<script>
+    const ctx = document.getElementById('funnelChart').getContext('2d');
+    
+    const colors = ['#3182ce', '#63b3ed', '#90cdf4', '#bee3f8', '#ebf8ff'];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ funnel_data.labels|safe }},
+            datasets: [{
+                label: 'Total de Clientes',
+                data: {{ funnel_data.data|safe }},
+                backgroundColor: '#667eea',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block header_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #333;">Analytics Dashboard</h1>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+    {% for key, dataset in datasets.items %}
+    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" 
+         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'"
+         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #667eea;">{{ dataset.name }}</h2>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5;">{{ dataset.description }}</p>
+        
+        <div style="margin-bottom: 1rem;">
+            {% if dataset.stats.row_count > 0 %}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #888; font-size: 0.85rem;">Records:</span>
+                <span style="font-weight: 600; color: #333;">{{ dataset.stats.row_count|floatformat:0 }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #888; font-size: 0.85rem;">Columns:</span>
+                <span style="font-weight: 600; color: #333;">{{ dataset.stats.column_count }}</span>
+            </div>
+            {% else %}
+            <div style="color: #999; font-size: 0.9rem; font-style: italic;">No data available</div>
+            {% endif %}
+        </div>
+        
+        <a href="{% url dataset.url %}" 
+           style="display: inline-block; padding: 0.75rem 1.5rem; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: 500; transition: background 0.3s;"
+           onmouseover="this.style.background='#5568d3'"
+           onmouseout="this.style.background='#667eea'">
+            View Details →
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

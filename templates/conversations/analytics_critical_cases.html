@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #333;">{{ title }}</h1>
+            <a href="{% url 'analytics' %}" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">
+                ← Back to Analytics Dashboard
+            </a>
+        </div>
+    </div>
+    <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #ffebee; border-left: 4px solid #c62828; border-radius: 4px; color: #c62828; font-size: 0.9rem;">
+        <strong>⚠️ Attention Required:</strong> These are high-risk clients that require immediate attention to prevent churn.
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+{% if stats.row_count > 0 %}
+<div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #333;">Summary Statistics</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div style="padding: 1rem; background: #ffebee; border-radius: 4px; border-left: 4px solid #c62828;">
+            <div style="color: #c62828; font-size: 0.85rem; margin-bottom: 0.25rem; font-weight: 600;">Critical Cases</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #c62828;">{{ stats.row_count|floatformat:0 }}</div>
+        </div>
+        {% if metadata.total_clients %}
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Total Clients Analyzed</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #667eea;">{{ metadata.total_clients }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Critical Cases List -->
+{% if data and data|length > 0 %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for case in data %}
+    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #c62828;">
+        <!-- Case Header -->
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e0e0e0;">
+            <div style="flex: 1;">
+                <h2 style="font-size: 1.4rem; margin: 0 0 0.5rem 0; color: #333;">
+                    {{ case.client_name }}
+                </h2>
+                {% if case.legal_name %}
+                <p style="margin: 0 0 0.25rem 0; color: #666; font-size: 0.9rem;">
+                    <strong>Legal Name:</strong> {{ case.legal_name }}
+                </p>
+                {% endif %}
+                {% if case.cnpj %}
+                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                    <strong>CNPJ:</strong> {{ case.cnpj }}
+                </p>
+                {% endif %}
+                {% if case.contact_id %}
+                <p style="margin: 0.25rem 0 0 0; color: #666; font-size: 0.9rem;">
+                    <strong>Contact ID:</strong> {{ case.contact_id }}
+                </p>
+                {% endif %}
+            </div>
+            <div style="text-align: right;">
+                <div style="padding: 0.5rem 1rem; background: #ffebee; color: #c62828; border-radius: 4px; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                    RISK: {{ case.risk_level|upper }}
+                </div>
+                <div style="font-size: 1.2rem; font-weight: 600; color: #c62828;">
+                    Score: {{ case.risk_score }}/100
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Total Interactions</div>
+                <div style="font-size: 1.2rem; font-weight: 600; color: #333;">{{ case.total_interactions }}</div>
+            </div>
+            <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Days Since Last Interaction</div>
+                <div style="font-size: 1.2rem; font-weight: 600; color: #c62828;">{{ case.days_since_last_interaction|default:"N/A" }}</div>
+            </div>
+            <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Trend</div>
+                <div style="font-size: 1.2rem; font-weight: 600; 
+                    {% if case.trend == 'down' %}color: #c62828;{% elif case.trend == 'up' %}color: #2e7d32;{% else %}color: #666;{% endif %}">
+                    {% if case.trend == 'down' %}▼ DOWN{% elif case.trend == 'up' %}▲ UP{% elif case.trend == 'stable' %}→ STABLE{% else %}{{ case.trend|default:"N/A" }}{% endif %}
+                </div>
+            </div>
+            {% if case.date_range %}
+            <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px;">
+                <div style="color: #888; font-size: 0.85rem; margin-bottom: 0.25rem;">Date Range</div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: #333;">
+                    {% if case.date_range.start %}{{ case.date_range.start|slice:":10" }}{% endif %} to {% if case.date_range.end %}{{ case.date_range.end|slice:":10" }}{% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Topics -->
+        {% if case.topics and case.topics|length > 0 %}
+        <div style="margin-bottom: 1rem;">
+            <div style="color: #666; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Key Topics:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for topic in case.topics %}
+                <span style="padding: 0.3rem 0.75rem; background: #e3f2fd; border-radius: 4px; font-size: 0.85rem; color: #1976d2; font-weight: 500;">
+                    {{ topic }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Risk Factors -->
+        {% if case.risk_factors %}
+        <div style="margin-bottom: 1rem; padding: 1rem; background: #fff3e0; border-radius: 4px; border-left: 3px solid #e65100;">
+            <div style="color: #e65100; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">⚠️ Risk Factors:</div>
+            {% if case.risk_factors.days_without_interaction %}
+            <div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #333;">
+                <strong>Days without interaction:</strong> {{ case.risk_factors.days_without_interaction }}
+            </div>
+            {% endif %}
+            {% if case.risk_factors.high_risk_keywords_found and case.risk_factors.high_risk_keywords_found|length > 0 %}
+            <div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #333;">
+                <strong>High-risk keywords:</strong> 
+                {% for keyword in case.risk_factors.high_risk_keywords_found %}
+                <span style="padding: 0.2rem 0.5rem; background: #ffebee; border-radius: 3px; margin-left: 0.25rem;">{{ keyword }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if case.risk_factors.recurring_high_risk_topics and case.risk_factors.recurring_high_risk_topics|length > 0 %}
+            <div style="font-size: 0.9rem; color: #333;">
+                <strong>Recurring high-risk topics:</strong> 
+                {% for topic in case.risk_factors.recurring_high_risk_topics %}
+                <span style="padding: 0.2rem 0.5rem; background: #ffebee; border-radius: 3px; margin-left: 0.25rem;">{{ topic }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Summary -->
+        {% if case.summary %}
+        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+            <div style="color: #333; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem;">Executive Summary:</div>
+            <div style="color: #555; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">{{ case.summary }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+    {% if has_previous %}
+    <a href="?page={{ previous_page }}{{ query_string }}" 
+       style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #667eea; transition: all 0.3s;"
+       onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#667eea'"
+       onmouseout="this.style.background='white'; this.style.borderColor='#ddd'">
+        Previous
+    </a>
+    {% else %}
+    <span style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; color: #ccc; cursor: not-allowed;">Previous</span>
+    {% endif %}
+    
+    <span style="padding: 0.5rem 1rem; color: #666;">
+        Page {{ current_page }} of {{ total_pages }}
+    </span>
+    
+    {% if has_next %}
+    <a href="?page={{ next_page }}{{ query_string }}" 
+       style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #667eea; transition: all 0.3s;"
+       onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#667eea'"
+       onmouseout="this.style.background='white'; this.style.borderColor='#ddd'">
+        Next
+    </a>
+    {% else %}
+    <span style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; color: #ccc; cursor: not-allowed;">Next</span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div style="background: white; border-radius: 8px; padding: 3rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <p style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #999;">No critical cases found</p>
+    <p style="font-size: 0.9rem; color: #999;">All clients are currently at acceptable risk levels.</p>
+</div>
+{% endif %}
+{% endblock %}
+

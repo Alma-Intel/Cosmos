@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block header_title %}ALMA COSMOS - Bots{% endblock %}
+
+{% block content %}
+
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; min-height: 600px;">
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for bot in bots %}
+        <div class="bot-card" 
+            onclick="loadChat('{{ bot.chatbase_id }}', '{{ bot.name }}', '{{ bot.platform }}', '{{ bot.url }}', '{{ token }}')"
+            style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; border-left: 4px solid {% if bot.status == 'active' %}#667eea{% else %}#ecc94b{% endif %};">
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem;">{{ bot.name }}</h3>
+            </div>
+            
+            <p style="color: #718096; font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.4;">
+                {{ bot.description }}
+            </p>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; color: #cbd5e0;">Criado em: {{ bot.created_at }}</span>
+                <span style="color: #667eea; font-size: 0.9rem; font-weight: 600;">Testar &rarr;</span>
+            </div>
+        </div>
+        {% empty %}
+        <div style="padding: 2rem; text-align: center; color: #a0aec0; background: white; border-radius: 8px;">
+            Nenhum bot configurado.
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column;">
+        
+        <div style="padding: 1rem; border-bottom: 1px solid #eee; background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+            <strong id="preview-title" style="color: #4a5568;">Selecione um bot para testar</strong>
+            <span style="font-size: 0.8rem; color: #a0aec0;">Ambiente de Teste</span>
+        </div>
+
+        <div style="flex: 1; background: #f0f4f8; position: relative;">
+            <div id="placeholder-msg" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #cbd5e0;">
+                <svg style="width: 48px; height: 48px; margin-bottom: 10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                <p>O chat aparecerá aqui</p>
+            </div>
+
+            <iframe id="chatbase-frame"
+                    src=""
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    style="display: none; height: 100%; min-height: 700px;">
+            </iframe>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function loadChat(botId, botName, botPlatform, botUrl, token) {
+        const frame = document.getElementById('chatbase-frame');
+        const placeholder = document.getElementById('placeholder-msg');
+        const title = document.getElementById('preview-title');
+        
+        const cleanId = botId.trim();
+
+        if (!cleanId) {
+            alert('No Chat ID configured for this bot.');
+            return;
+        }
+
+        title.innerText = "Testando: " + botName;
+        placeholder.style.display = 'none';
+        frame.style.display = 'block';
+
+        let finalUrl = `${botUrl}${cleanId}`;
+        const params = [];
+
+        if (botPlatform.toLowerCase() === 'chatbase'){
+            params.push(`t=${new Date().getTime()}`);
+            if (token && token !== 'None' && token !== '') {
+                params.push(`token=${token}`);
+            }
+
+            if (params.length > 0) {
+                finalUrl += `?${params.join('&')}`;
+            }
+        } 
+
+        frame.src = finalUrl;
+
+        console.log("Final URL: " + finalUrl);
+    }
+
+</script>
+
+<style>
+    .bot-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+</style>
+{% endblock %}
