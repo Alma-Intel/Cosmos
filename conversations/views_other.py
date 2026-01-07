@@ -644,11 +644,12 @@ def _workspace_supervisor_view(request, profile):
 
     raw_objections = get_objections_from_database(team_uuids, start_date=start_date)
     
-    team_members_dict = {
-        str(p.external_uuid): (p.user.first_name or p.user.username or p.user.get_display_name()) 
-        for p in team_members 
-        if p.external_uuid
-    }
+    team_members_dict = {}
+    for p in team_members:
+        if p.external_uuid:
+            key = str(p.external_uuid).strip().lower()
+            name = p.user.first_name or p.user.username or None
+            team_members_dict[key] = name
     
     critical_objections_list = []
     INFOBIP_BASE_URL = "https://portal-ny2.infobip.com/conversations/my-work?conversationId="
@@ -668,8 +669,15 @@ def _workspace_supervisor_view(request, profile):
     for row in raw_objections:
         result = row.get('result', {})
         details = result.get('objection_details', {}).get('objections_detected', [])
-        
-        agent_name = team_members_dict.get(row['agent_uuid'], row['agent_uuid'])
+        raw_uuid = row.get('agent_uuid')
+
+        if raw_uuid:
+            lookup_key = str(raw_uuid).strip().lower()
+            agent_name = team_members_dict.get(lookup_key, lookup_key)
+
+        else:
+            agent_name = 'Sem Nome'
+
         created_at = row.get('created_at')
 
         conversation_uuid = row.get('conversation_uuid')
@@ -789,11 +797,12 @@ def team_performance_detail(request):
     # ---------------------- Objections Frequency Table ----------------------
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     objection_list = get_objections_from_database(team_uuids, start_date=start_date)
-    team_members_dict = {
-        str(p.external_uuid): (p.user.first_name or p.user.username or p.user.get_display_name()) 
-        for p in team_members 
-        if p.external_uuid
-    }
+    team_members_dict = {}
+    for p in team_members:
+        if p.external_uuid:
+            key = str(p.external_uuid).strip().lower()
+            name = p.user.first_name or p.user.username or None
+            team_members_dict[key] = name
 
     # ---------------------- Objections Resolution Table ----------------------
     objection_analysis = format_objection_data(objection_list, team_members_dict)
@@ -817,7 +826,9 @@ def team_performance_detail(request):
         result = row.get('result', {})
         details = result.get('objection_details', {}).get('objections_detected', [])
         
-        agent_name = team_members_dict.get(row['agent_uuid'], row['agent_uuid'])
+        raw_uuid = row.get('agent_uuid')
+        lookup_key = str(raw_uuid).strip().lower() if raw_uuid else None
+        agent_name = team_members_dict.get(lookup_key, lookup_key) if lookup_key else 'Sem Nome'
         conv_uuid = row.get('conversation_uuid', '')
 
         for item in details:

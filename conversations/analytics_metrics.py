@@ -207,10 +207,10 @@ def format_objection_data(objections_list, team_members_dict):
         objections_results = result.get('objection_details', {}).get('objections_detected', [])
 
         seller_id = obj.get('agent_uuid') or obj.get('seller_uuid') or 'Desconhecido'
+        lookup_key = str(seller_id).strip().lower() if seller_id else 'Desconhecido'
         seller_name = seller_id
-        if seller_id in team_members_dict:
-            seller_name = team_members_dict[seller_id]
-
+        if lookup_key in team_members_dict:
+            seller_name = team_members_dict[lookup_key]
         for item in objections_results:
 
             obj_type = item.get('objection_type', 'other')
