@@ -717,6 +717,7 @@ def team_performance_detail(request):
                                     get_objections_from_database,
                                     format_objection_data)
     from datetime import timedelta
+    from collections import defaultdict
     
     try:
         days_param = int(request.GET.get('days', 30))
@@ -730,9 +731,9 @@ def team_performance_detail(request):
     team_name = None
 
     if user and user.team:
-        if user.team.name is not None:
-            team_name = user.team.name
+        team_name = str(user.team)
 
+    # ---------------------- KPIS and Sellers Scores ----------------------
     team_aggregates = {
         'total_conversations': 0,
         'total_sales': 0,
@@ -785,14 +786,81 @@ def team_performance_detail(request):
     if team_aggregates['total_conversations'] > 0:
         team_conversion_rate = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
 
+    # ---------------------- Objections Frequency Table ----------------------
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     objection_list = get_objections_from_database(team_uuids, start_date=start_date)
+    team_members_dict = {
+        str(p.external_uuid): (p.user.first_name or p.user.username or member.get_display_name()) 
+        for p in team_members 
+        if p.external_uuid
+    }
 
-    team_members_dict = {}
-    for member in team_members:
-        team_members_dict[member.external_uuid] = member.get_display_name()
-
+    # ---------------------- Objections Resolution Table ----------------------
     objection_analysis = format_objection_data(objection_list, team_members_dict)
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
+    }
+
+    INFOBIP_BASE_URL = "https://portal-ny2.infobip.com/conversations/my-work?conversationId="
+    seller_groups = defaultdict(list)
+
+    for row in objection_list:
+        result = row.get('result', {})
+        details = result.get('objection_details', {}).get('objections_detected', [])
+        
+        agent_name = team_members_dict.get(row['agent_uuid'], row['agent_uuid'])
+        conv_uuid = row.get('conversation_uuid', '')
+
+        for item in details:
+            obj_type = item.get('objection_type', 'other')
+            score = item.get('resolution_quality', 0)
+            response = item.get('seller_response', '-')
+
+
+            if (response is None or 
+                (isinstance(response, str) and not response.strip()) or
+                response.lower() in ['null', 'none']):
+                response = 'Sem Resposta'
+            else:
+                response = f'"{response}"'
+            
+            obj_data = {
+                'seller': agent_name,
+                'type': type_map.get(obj_type, obj_type.capitalize()),
+                'score': score,
+                'objection_text': item.get('objection_text', '-'),
+                'response_text': response,
+                'conversation_id': conv_uuid,
+                'url': f"{INFOBIP_BASE_URL}{conv_uuid}" if conv_uuid else "#",
+                'created_at': row.get('created_at')
+            }
+            seller_groups[agent_name].append(obj_data)
+
+
+    detailed_objections = []
+    for seller, items in seller_groups.items():
+        if not items:
+            continue
+            
+        best_item = max(items, key=lambda x: x['score'])
+        worst_item = min(items, key=lambda x: x['score'])
+
+        if best_item == worst_item:
+            detailed_objections.append(best_item)
+        else:
+            detailed_objections.append(best_item)
+            detailed_objections.append(worst_item)
+
+    detailed_objections.sort(key=lambda x: x['seller'])
 
     team_data = {
         'team_name': team_name,
@@ -819,9 +887,10 @@ def team_performance_detail(request):
     }
 
     context = {
-        'title': 'Team Performance Analysis',
+        'title': 'Análise de Desempenho da Equipe',
         'team_data': team_data,
         'current_days': days_param,
+        'detailed_objections': detailed_objections
     }
     
     return render(request, 'conversations/analytics_team_performance_detail.html', context)
