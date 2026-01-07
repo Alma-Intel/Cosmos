@@ -151,6 +151,84 @@
     {% endif %}
 </div>
 
+<div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #333; display: flex; align-items: center; gap: 10px;">
+        Exemplos de Resolução
+        <span style="font-size: 0.8rem; font-weight: normal; color: #718096; background: #edf2f7; padding: 2px 8px; border-radius: 12px;">Por Vendedor</span>
+    </h2>
+
+    {% if detailed_objections %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+            <thead>
+                <tr style="background-color: #00B4D8; color: white; text-align: center;">
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Vendedor</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Score</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Tipo</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Objeção (Cliente)</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Resposta (Vendedor)</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detailed_objections %}
+                <tr style="background-color: {% cycle 'white' '#F0F9FF' %}; border-bottom: 1px solid #e2e8f0; transition: background 0.2s;" 
+                    onmouseover="this.style.backgroundColor='#e0f2fe'" 
+                    onmouseout="this.style.backgroundColor='{% cycle 'white' '#F0F9FF' %}'">
+                    
+                    <td style="padding: 12px; color: #2d3748; font-weight: 600; text-align: center; border-right: 1px solid #edf2f7;">
+                        {{ item.seller }}
+                    </td>
+
+                    <td style="padding: 12px; text-align: center; border-right: 1px solid #edf2f7;">
+                        <span style="
+                            padding: 4px 10px; 
+                            border-radius: 12px; 
+                            font-size: 0.85rem; 
+                            font-weight: 700;
+                            {% if item.score >= 70 %} background: #d1fae5; color: #047857;
+                            {% elif item.score >= 50 %} background: #ffedd5; color: #c2410c;
+                            {% else %} background: #fee2e2; color: #b91c1c; {% endif %}
+                        ">
+                            {{ item.score }}
+                        </span>
+                    </td>
+
+                    <td style="padding: 12px; color: #4a5568; text-align: center; border-right: 1px solid #edf2f7; font-size: 0.9rem;">
+                        {{ item.type }}
+                    </td>
+
+                    <td style="padding: 12px; text-align: left; border-right: 1px solid #edf2f7; vertical-align: top;">
+                        <div style="font-size: 0.85rem; color: #4a5568; max-height: 80px; overflow-y: auto;">
+                            "{{ item.objection_text }}"
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px; text-align: left; border-right: 1px solid #edf2f7; vertical-align: top;">
+                        <div style="font-size: 0.85rem; color: #4a5568; font-style: italic; max-height: 80px; overflow-y: auto;">
+                            {{ item.response_text }}
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px; text-align: center;">
+                        <a href="{{ item.url }}" target="_blank" 
+                           title="Abrir no Infobip"
+                           style="display: inline-block; padding: 4px 8px; background: white; border: 1px solid #cbd5e0; color: #4a5568; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-family: monospace;">
+                            🔗 {{ item.conversation_id|slice:":8" }}...
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: #a0aec0; background: #f7fafc; border-radius: 6px;">
+            <p style="font-size: 1.1rem;">Nenhuma objeção registrada para análise comparativa.</p>
+        </div>
+    {% endif %}
+</div>
+
 <script>
     const sellerData = {{ team_data.seller_analytics|safe }};
     const teamName = "{{ team_data.team_name }}";
