@@ -21,13 +21,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-producti
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # Allow Railway domain and any configured hosts
-default_hosts = 'localhost,127.0.0.1,cosmos-prod.up.railway.app'
+default_hosts = 'localhost,127.0.0.1,cosmos-prod.up.railway.app,cosmos.almaintel.com'
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default=default_hosts, cast=lambda v: [s.strip() for s in v.split(',')])
 
 # CSRF trusted origins for Railway
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='https://cosmos-prod.up.railway.app',
+    default='https://cosmos-prod.up.railway.app,https://cosmos.almaintel.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
