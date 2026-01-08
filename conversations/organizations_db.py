@@ -42,35 +42,6 @@ def create_organization(name, active='true', meta_data=None):
         return str(result[0]) if result else str(org_uuid)
 
 
-def create_authorization(organization_uuid, apikey=None):
-    """
-    Create an authorization entry for an organization
-    
-    Args:
-        organization_uuid (str): UUID of the organization
-        apikey (str): Optional API key (will generate one if not provided)
-        
-    Returns:
-        str: UUID of the created authorization
-    """
-    auth_uuid = uuid.uuid4()
-    now = timezone.now()
-    
-    # Generate a random API key if not provided
-    if not apikey:
-        apikey = f"alma_{uuid.uuid4().hex[:32]}"
-    
-    with get_organizations_connection().cursor() as cursor:
-        cursor.execute("""
-            INSERT INTO authorization (uuid, apikey, organization_uuid, created_at, last_used)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING uuid
-        """, [str(auth_uuid), apikey, str(organization_uuid), now, None])
-        
-        result = cursor.fetchone()
-        return str(result[0]) if result else str(auth_uuid)
-
-
 def get_organization_by_uuid(org_uuid):
     """
     Get organization by UUID
@@ -175,31 +146,4 @@ def update_organization(org_uuid, name=None, active=None, meta_data=None):
         return cursor.rowcount > 0
 
 
-def get_authorization_by_organization(org_uuid):
-    """
-    Get authorization for an organization
-    
-    Args:
-        org_uuid (str): UUID of the organization
-        
-    Returns:
-        dict: Authorization data or None if not found
-    """
-    with get_organizations_connection().cursor() as cursor:
-        cursor.execute("""
-            SELECT uuid, apikey, organization_uuid, created_at, last_used
-            FROM authorization
-            WHERE organization_uuid = %s
-        """, [str(org_uuid)])
-        
-        row = cursor.fetchone()
-        if row:
-            return {
-                'uuid': str(row[0]),
-                'apikey': row[1],
-                'organization_uuid': str(row[2]),
-                'created_at': row[3],
-                'last_used': row[4],
-            }
-        return None
 

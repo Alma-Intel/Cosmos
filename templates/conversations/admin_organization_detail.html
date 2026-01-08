@@ -211,35 +211,6 @@
         </div>
     </div>
     
-    {% if authorization %}
-    <div class="section-card">
-        <h3>API Authorization</h3>
-        <div class="meta-item">
-            <div class="meta-label">API Key</div>
-            <div class="api-key-display">{{ authorization.apikey }}</div>
-        </div>
-        <div class="org-meta" style="margin-top: 1rem;">
-            <div class="meta-item">
-                <div class="meta-label">Authorization UUID</div>
-                <div class="meta-value">{{ authorization.uuid }}</div>
-            </div>
-            <div class="meta-item">
-                <div class="meta-label">Created At</div>
-                <div class="meta-value">{{ authorization.created_at|date:"Y-m-d H:i:s" }}</div>
-            </div>
-            <div class="meta-item">
-                <div class="meta-label">Last Used</div>
-                <div class="meta-value">
-                    {% if authorization.last_used %}
-                    {{ authorization.last_used|date:"Y-m-d H:i:s" }}
-                    {% else %}
-                    Never
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
     
     <div class="section-card">
         <h3>Teams ({{ teams.count }})</h3>

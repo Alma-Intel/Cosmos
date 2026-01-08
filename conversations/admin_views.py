@@ -11,8 +11,7 @@ from .models import UserProfile, Team
 from .organizations_db import (
     create_organization,
     get_all_organizations,
-    get_organization_by_uuid,
-    get_authorization_by_organization
+    get_organization_by_uuid
 )
 
 
@@ -136,9 +135,6 @@ def admin_organization_detail(request, org_uuid):
         messages.error(request, 'Organization not found.')
         return redirect('admin_panel')
     
-    # Get authorization for this organization
-    authorization = get_authorization_by_organization(org_uuid)
-    
     # Get all teams for this organization
     teams = Team.objects.filter(alma_internal_organization=org_uuid)
     
@@ -149,7 +145,6 @@ def admin_organization_detail(request, org_uuid):
         'title': f'Organization: {organization["name"]}',
         'current_profile': current_profile,
         'organization': organization,
-        'authorization': authorization,
         'teams': teams,
         'users': users,
     }
