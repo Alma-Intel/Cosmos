@@ -130,6 +130,7 @@ def get_metrics_for_team_members(team_members_uuids, start_date=None):
 
 
 def get_objections_from_database(team_members_uuids, start_date=None):
+    """Get objections detected for a team from the analytics database."""
     objections_detected = []
     try:
         if not team_members_uuids:
@@ -192,6 +193,7 @@ def get_objections_from_database(team_members_uuids, start_date=None):
         return objections_detected
     
 def format_objection_data(objections_list, team_members_dict):
+    """Format objections data to get frequency and resolution scores by objection type."""
     if not objections_list:
         return []
 
@@ -276,7 +278,145 @@ def format_objection_data(objections_list, team_members_dict):
 
     return sorted(formatted_data, key=lambda x: x['freq'], reverse=True)
 
+def format_critical_objections(raw_objections, team_members_dict, infobip_conversations_url=None):
+    """Format objections data to get critical objections across the team."""
+    critical_objections_list = []
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
+    }
+
+    try:
+        for row in raw_objections:
+            result = row.get('result', {})
+            details = result.get('objection_details', {}).get('objections_detected', [])
+            raw_uuid = row.get('agent_uuid')
+
+            if raw_uuid:
+                lookup_key = str(raw_uuid).strip().lower()
+                agent_name = team_members_dict.get(lookup_key, lookup_key)
+
+            else:
+                agent_name = 'Sem Nome'
+
+            created_at = row.get('created_at')
+
+            conversation_uuid = row.get('conversation_uuid')
+
+            for item in details:
+                score = item.get('resolution_quality', 0)
+                
+                if score < 60:
+                    obj_type = item.get('objection_type', 'other')
+                    
+                    critical_objections_list.append({
+                        'agent': agent_name,
+                        'type': type_map.get(obj_type, obj_type.capitalize()),
+                        'score': score,
+                        'text': item.get('objection_text', ''),
+                        'response': item.get('seller_response', ''),
+                        'time': created_at,
+                        'conversation_uuid': row.get('conversation_uuid'),
+                        'url': f"{infobip_conversations_url}{conversation_uuid}" if conversation_uuid else "#"
+                    })
+        
+        critical_objections_list.sort(key=lambda x: (x['score'], x['time']), reverse=False)
+        return critical_objections_list
+    
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error processing critical objections: {e}")
+        return []
+
+def format_objection_resolution_by_seller(raw_objections, team_members_dict, infobip_conversations_url=None):
+    """Format objections data to get best and worst resolved objections per seller."""
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
+    }
+
+    seller_groups = defaultdict(list)
+    detailed_objections = []
+
+    try:
+        for row in raw_objections:
+            result = row.get('result', {})
+            details = result.get('objection_details', {}).get('objections_detected', [])
+            
+            raw_uuid = row.get('agent_uuid')
+            lookup_key = str(raw_uuid).strip().lower() if raw_uuid else None
+            agent_name = team_members_dict.get(lookup_key, lookup_key) if lookup_key else 'Sem Nome'
+            conv_uuid = row.get('conversation_uuid', '')
+
+            for item in details:
+                obj_type = item.get('objection_type', 'other')
+                score = item.get('resolution_quality', 0)
+                response = item.get('seller_response', '-')
+
+
+                if (response is None or 
+                    (isinstance(response, str) and not response.strip()) or
+                    response.lower() in ['null', 'none']):
+                    response = 'Sem Resposta'
+                else:
+                    response = f'"{response}"'
+                
+                obj_data = {
+                    'seller': agent_name,
+                    'type': type_map.get(obj_type, obj_type.capitalize()),
+                    'score': score,
+                    'objection_text': item.get('objection_text', '-'),
+                    'response_text': response,
+                    'conversation_id': conv_uuid,
+                    'url': f"{infobip_conversations_url}{conv_uuid}" if conv_uuid else "#",
+                    'created_at': row.get('created_at')
+                }
+                seller_groups[agent_name].append(obj_data)
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error processing objections for sellers: {e}")
+        return []
+
+    try:
+        for seller, items in seller_groups.items():
+            if not items:
+                continue
+                
+            best_item = max(items, key=lambda x: x['score'])
+            worst_item = min(items, key=lambda x: x['score'])
+
+            if best_item == worst_item:
+                detailed_objections.append(best_item)
+            else:
+                detailed_objections.append(best_item)
+                detailed_objections.append(worst_item)
+
+        detailed_objections.sort(key=lambda x: x['seller'])
+        return detailed_objections
+    
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error compiling detailed objections: {e}")
+        return []
+
 def calculate_agent_scores(agent, analysis_list, start_date=None):
+    """Calculate various performance scores for a given agent."""
     if not agent or not agent.external_uuid:
         return {}
     
@@ -376,6 +516,7 @@ def calculate_agent_scores(agent, analysis_list, start_date=None):
     
 
 def get_team_summary_stats(team_members, start_date=None):
+    """Calculate aggregate statistics for a team based on its members' data."""
     from .analytics_metrics import get_metrics_for_agent, calculate_agent_scores
 
     aggregates = {
@@ -419,6 +560,7 @@ def get_team_summary_stats(team_members, start_date=None):
     }
 
 def get_stage_scores(analysis_list, members_analysis=None):
+    """Maps sales stage keys to Portuguese labels and compiles agent and team average scores."""
     LABEL_TRANSLATIONS = {
         'closing': 'Fechamento',
         'connection': 'Conexão',
@@ -477,6 +619,7 @@ def get_stage_scores(analysis_list, members_analysis=None):
     return metrics_data
 
 def get_sales_performance(analysis_list):
+    """Get sales performance data from analysis list."""
     stages_perfomance = []
 
     for analysis in analysis_list:
@@ -498,6 +641,7 @@ def get_sales_performance(analysis_list):
     return stages_perfomance
 
 def get_best_practices(analysis_list):
+    """Get sales best practices data from analysis list."""
     best_practices_list = []
 
     for analysis in analysis_list:
@@ -515,6 +659,7 @@ def get_best_practices(analysis_list):
     return best_practices_list
 
 def get_sentiment_analysis(analysis_list):
+    """Get the sentiment analysis data from analysis list."""
     sentiment_analysis_list = []
 
     for analysis in analysis_list:
@@ -527,3 +672,72 @@ def get_sentiment_analysis(analysis_list):
                 sentiment_analysis_list.append(sentiment_analysis)
 
     return sentiment_analysis_list
+
+def get_team_aggregates(team_members, start_date=None):
+    """
+    Calculate team aggregates and individual seller analytics.
+    Args:
+        - team_members: List of team member objects with 'external_uuid' and 'user' attributes.
+        - start_date: Optional start date for filtering metrics.
+
+    Returns:
+        - team_aggregates: Dictionary with aggregated team metrics.
+        - sellers_analytics: List of dictionaries with individual seller analytics.
+        - num_agents: Number of active agents with performance data.
+    
+    """
+    team_aggregates = {
+        'total_conversations': 0,
+        'total_sales': 0,
+        'meetings_scheduled': 0,
+        'referrals_received': 0,
+        'total_follow_ups': 0,
+        'sum_performance': 0,
+        'count_performance': 0,
+        
+        'sum_followup_rate': 0,
+        'sum_meeting_attempt': 0,
+        'sum_meeting_success': 0,
+        'sum_referral_req': 0,
+        'sum_discount_strat': 0,
+        'sum_objection_res': 0,
+        'active_agents_count': 0
+    }
+
+    sellers_analytics = []
+
+    for member in team_members:
+        analysis_list = get_metrics_for_agent(member.external_uuid, start_date=start_date)
+        agent_data = calculate_agent_scores(member, analysis_list, start_date=start_date)
+        
+        if not agent_data: continue
+
+        sellers_analytics.append(agent_data)
+
+        team_aggregates['total_conversations'] += agent_data.get('total_conversations', 0)
+        team_aggregates['total_sales'] += agent_data.get('total_sales', 0)
+        team_aggregates['meetings_scheduled'] += agent_data.get('meetings_scheduled', 0)
+        team_aggregates['referrals_received'] += agent_data.get('referrals_received', 0)
+        team_aggregates['total_follow_ups'] += agent_data.get('total_followups', 0)
+        
+        team_aggregates['sum_performance'] += agent_data.get('avg_performance', 0)
+        team_aggregates['count_performance'] += 1 if agent_data.get('avg_performance', 0) > 0 else 0
+
+        team_aggregates['sum_followup_rate'] += agent_data.get('follow_up_rate', 0)
+        team_aggregates['sum_meeting_attempt'] += agent_data.get('meeting_attempt_rate', 0)
+        team_aggregates['sum_meeting_success'] += agent_data.get('meeting_success_rate', 0)
+        team_aggregates['sum_referral_req'] += agent_data.get('referral_request_rate', 0)
+        team_aggregates['sum_discount_strat'] += agent_data.get('discount_strategy_rate', 0)
+        team_aggregates['sum_objection_res'] += agent_data.get('objection_resolution_rate', 0)
+        
+        team_aggregates['active_agents_count'] += 1
+
+    num_agents = team_aggregates['active_agents_count'] if team_aggregates['active_agents_count'] > 0 else 1
+    
+    team_aggregates['team_conversion_rate'] = 0
+    if team_aggregates['total_conversations'] > 0:
+        team_aggregates['team_conversion_rate'] = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
+
+    return team_aggregates, sellers_analytics, num_agents
+
+    
