@@ -169,9 +169,9 @@ def create_api_key(organization_uuid, key_name):
     
     with get_organizations_connection().cursor() as cursor:
         cursor.execute("""
-            INSERT INTO "authorization" (uuid, apikey, organization_uuid, created_at, last_used, "apiKeyName")
+            INSERT INTO "authorization" (uuid, apikey, organization_uuid, created_at, last_used, apikeyname)
             VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING uuid, apikey, "apiKeyName"
+            RETURNING uuid, apikey, apikeyname
         """, [str(auth_uuid), apikey, str(organization_uuid), now, None, key_name])
         
         result = cursor.fetchone()
@@ -199,7 +199,7 @@ def get_api_keys_by_organization(org_uuid):
     """
     with get_organizations_connection().cursor() as cursor:
         cursor.execute("""
-            SELECT uuid, apikey, organization_uuid, created_at, last_used, "apiKeyName"
+            SELECT uuid, apikey, organization_uuid, created_at, last_used, apikeyname
             FROM "authorization"
             WHERE organization_uuid = %s
             ORDER BY created_at DESC
@@ -249,7 +249,7 @@ def get_api_key_by_uuid(auth_uuid):
     """
     with get_organizations_connection().cursor() as cursor:
         cursor.execute("""
-            SELECT uuid, apikey, organization_uuid, created_at, last_used, "apiKeyName"
+            SELECT uuid, apikey, organization_uuid, created_at, last_used, apikeyname
             FROM "authorization"
             WHERE uuid = %s
         """, [str(auth_uuid)])
