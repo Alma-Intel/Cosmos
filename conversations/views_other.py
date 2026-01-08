@@ -459,17 +459,18 @@ def workspace(request):
         return _workspace_agent_view(request, profile, is_manager_plus)
 
 def _workspace_agent_view(request, user_profile, can_switch_view):
-    """Workspace view"""
+    """Workspace view for agent/users."""
     import json
     from .followups import (get_followups_for_agent, 
-                            get_link_tracking_from_agent,
+                            get_link_tracking_for_agent,
                             get_conversation_id,
-                            create_infobip_conversation_link
+                            get_followups_priority
                             )
     from .analytics_metrics import ( get_stage_scores, 
                                     get_metrics_for_agent,
                                     get_metrics_for_team_members)
     from datetime import timedelta
+    from django.conf import settings
     
     if not user_profile:
         user_profile = getattr(request.user, 'profile', None)
@@ -482,93 +483,36 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     start_date = timezone.now() - timedelta(days=days_param)
 
     external_uuid = user_profile.external_uuid if user_profile else None
-    team_members = get_user_team_members(request.user)
-    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
 
+    # Fetch follow-ups and link tracking data for agent
     all_followups = get_followups_for_agent(external_uuid)
-    all_links = get_link_tracking_from_agent(external_uuid)
+    all_links = get_link_tracking_for_agent(external_uuid)
 
-    #print(f"Fetched {len(all_followups)} follow-ups and {len(all_links)} links for agent {external_uuid}")
-
+    # Map conversation IDs to links
     followups_dict = {}
 
     for link in all_links:
-        baseUrl = "https://followupsbot-prod.up.railway.app/r/"
+        baseUrl = settings.SHORT_LINK_DOMAIN
         link_url = link['original_url']
         slug = link['slug']
-        #print(f"Link URL: {link_url}, Slug: {slug}")
         if link_url:
             conversation_id = get_conversation_id(link_url, "conversationId=", "&")
-            
             if conversation_id:
                 clean_id = str(conversation_id).strip().lower().replace('-', '')
-
                 if slug:
                     followups_dict[clean_id] = baseUrl + slug
                 else:
                     followups_dict[clean_id] = link_url
 
-    #if len(followups_dict) > 0:
-    #    print(f"[DEBUG] example of a key in dict: {list(followups_dict.keys())[0]}")
-    #print(f"[DEBUG] Followups dict length: {len(followups_dict)}")
-    #print(followups_dict)
-
-    now = timezone.now()
-    end = (now + timezone.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
-
+    # Prioritize follow-ups
     high_priority_limit = 10
     low_priority_limit = 15
 
-    high_priority_tasks = []
-    low_priority_tasks = []
-    calendar_events = []
-
-    count_total = 0
-    #count_sem_id = 0
-    #count_sem_link = 0
-    #count_com_link = 0
-
-    for task in all_followups:
-        count_total += 1
-        raw_uuid = task.get('conversation_uuid')
-
-        if raw_uuid:
-            conversation_id_key = str(raw_uuid).strip().lower().replace('-', '')
-            task['original_url'] = followups_dict.get(conversation_id_key)
-            #if not task['original_url'] and count_sem_link == 0:
-            #    print(f"[DEBUG FAIL] Task UUID normalized: {conversation_id_key}")
-
-        else:
-            #count_sem_id +=1
-            task['original_url'] = None
-
-        if not task['original_url']:
-            #count_sem_link += 1
-            #continue
-            task['original_url'] = create_infobip_conversation_link(str(raw_uuid or ''))
-        
-        #count_com_link += 1
-
-        task_date = task['follow_up_date']
-
-        if timezone.is_naive(task_date):
-            task_date = timezone.make_aware(task_date)
-            task['follow_up_date'] = task_date
-
-        if task_date <= now and task['score'] >= 700:
-            if len(high_priority_tasks) < high_priority_limit:
-                high_priority_tasks.append(task)
-            else:
-                low_priority_tasks.append(task)
-
-        else:
-            low_priority_tasks.append(task)
-
-    print(f"High priority tasks: {len(high_priority_tasks)}, Low priority tasks: {len(low_priority_tasks)}")
-    #print(f"Total tasks: {count_total}, With link: {count_com_link}, Without link: {count_sem_link}, Without ID: {count_sem_id} ")
-
+    high_priority_tasks, low_priority_tasks = get_followups_priority(all_followups, followups_dict, high_priority_limit)
     all_tasks_for_calendar = high_priority_tasks + low_priority_tasks
 
+    # Map followups to calendar events
+    calendar_events = []
     for task in all_tasks_for_calendar:
         event = {
             'title': f"Score: {task['score']}", 
@@ -586,9 +530,15 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     low_priority_tasks.sort(key=lambda x: (x['follow_up_date'], -x['score']))
     low_priority_tasks = low_priority_tasks[:low_priority_limit]
 
+    # Fetch team members and their UUIDs for performance chart
+    team_members = get_user_team_members(request.user)
+    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
+
+    # Fetch metrics data for agent and team members
     metrics_data = get_metrics_for_agent(external_uuid, start_date=start_date)
     members_data = get_metrics_for_team_members(team_uuids, start_date=start_date)
     scores_data = get_stage_scores(metrics_data, members_data)
+    # agent_scores = calculate_agent_scores(user_profile, metrics_data, start_date=start_date)
 
     context = {
         'title': 'ALMA COSMOS - Agent Workspace',
@@ -603,25 +553,29 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     return render(request, 'conversations/workspace_agent.html', context)
 
 def _workspace_supervisor_view(request, profile):
+    """Workspace view for supervisors/managers."""
     from .events_db import ( get_sales_stage_metrics )
-    from .analytics_utils import ( get_clients_analysis )
+    from .analytics_utils import ( format_critical_cases )
     from .analytics_metrics import ( get_team_summary_stats, 
                                     get_objections_from_database,
-                                    format_objection_data )
+                                    format_critical_objections)
     from datetime import timedelta
+    from django.conf import settings
 
     try:
         days_param = int(request.GET.get('days', 30))
     except ValueError:
         days_param = 30
-        
+    
+    infobip_conversations_url = settings.INFOBIP_CONVERSATIONS_URL
     start_date = timezone.now() - timedelta(days=days_param)
     
     team_members = get_user_team_members(request.user)
-    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     team_summary = get_team_summary_stats(team_members, start_date)
 
+    team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     sales_data = get_sales_stage_metrics(team_uuids, start_date)
+
     funnel_raw = sales_data.get('stages', {})
     sorted_items = sorted(funnel_raw.items(), key=lambda x: x[1], reverse=True)
 
@@ -630,18 +584,7 @@ def _workspace_supervisor_view(request, profile):
         'data': [item[1] for item in sorted_items]
     }
 
-    clients_data, _, global_analyses = get_clients_analysis()
-    critical_cases = []
-    cases = global_analyses.get('critical_cases', []) if global_analyses else []
-    
-    if clients_data:
-        critical_cases = [
-            c for c in cases 
-            if c.get('risk_level', '').lower() == 'high' 
-            or c.get('risk_score', 0) >= 80
-        ]
-        critical_cases.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
-
+    critical_cases = format_critical_cases()
     raw_objections = get_objections_from_database(team_uuids, start_date=start_date)
     
     team_members_dict = {}
@@ -651,55 +594,9 @@ def _workspace_supervisor_view(request, profile):
             name = p.user.first_name or p.user.username or None
             team_members_dict[key] = name
     
-    critical_objections_list = []
-    INFOBIP_BASE_URL = "https://portal-ny2.infobip.com/conversations/my-work?conversationId="
-    type_map = {
-        'price': 'Preço', 
-        'trust': 'Confiança', 
-        'timing': 'Tempo', 
-        'competitor': 'Concorrente', 
-        'product_fit': 'Adequação', 
-        'other': 'Outro',
-        'hesitation': 'Hesitação',
-        'payment_method': 'Método de Pagamento',
-        'implicit_price': 'Preço Implícito',
-        'implicit_timing': 'Tempo Implícito'
-    }
-
-    for row in raw_objections:
-        result = row.get('result', {})
-        details = result.get('objection_details', {}).get('objections_detected', [])
-        raw_uuid = row.get('agent_uuid')
-
-        if raw_uuid:
-            lookup_key = str(raw_uuid).strip().lower()
-            agent_name = team_members_dict.get(lookup_key, lookup_key)
-
-        else:
-            agent_name = 'Sem Nome'
-
-        created_at = row.get('created_at')
-
-        conversation_uuid = row.get('conversation_uuid')
-
-        for item in details:
-            score = item.get('resolution_quality', 0)
-            
-            if score < 60:
-                obj_type = item.get('objection_type', 'other')
-                
-                critical_objections_list.append({
-                    'agent': agent_name,
-                    'type': type_map.get(obj_type, obj_type.capitalize()),
-                    'score': score,
-                    'text': item.get('objection_text', ''),
-                    'response': item.get('seller_response', ''),
-                    'time': created_at,
-                    'conversation_uuid': row.get('conversation_uuid'),
-                    'url': f"{INFOBIP_BASE_URL}{conversation_uuid}" if conversation_uuid else "#"
-                })
-
-    critical_objections_list.sort(key=lambda x: (x['score'], x['time']), reverse=False)
+    critical_objections_list = format_critical_objections(raw_objections, 
+                                                          team_members_dict, 
+                                                          infobip_conversations_url)
     top_critical_objections = critical_objections_list[:5]
 
     context = {
@@ -712,6 +609,7 @@ def _workspace_supervisor_view(request, profile):
         'top_critical_cases': critical_cases[:5],
         'current_days': days_param,
         'cases_to_verify': top_critical_objections, 
+        'current_profile': profile,
         'objections_alert_count': len(critical_objections_list)
     }
     
@@ -719,13 +617,23 @@ def _workspace_supervisor_view(request, profile):
 
 @login_required
 def team_performance_detail(request):
+    """Page for detailed team performance analytics."""
     from .analytics_metrics import (
-                                    get_metrics_for_agent, 
-                                    calculate_agent_scores,
+                                    get_team_aggregates,
                                     get_objections_from_database,
-                                    format_objection_data)
+                                    format_objection_data,
+                                    format_objection_resolution_by_seller)
     from datetime import timedelta
-    from collections import defaultdict
+    from django.conf import settings
+
+    # Check if user is a manager of this team
+    current_profile = getattr(request.user, 'profile', None)
+
+    is_team_manager = (current_profile.is_manager() or
+                       current_profile.role in ['Manager', 'Director', 'Admin'])
+    
+    if not is_team_manager:
+        raise PermissionDenied("You don't have permission to view analytics data for this team.")
     
     try:
         days_param = int(request.GET.get('days', 30))
@@ -733,6 +641,8 @@ def team_performance_detail(request):
         days_param = 30
         
     start_date = timezone.now() - timedelta(days=days_param)
+
+    infobip_conversations_url = settings.INFOBIP_CONVERSATIONS_URL
 
     team_members = get_user_team_members(request.user)
     user, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -742,61 +652,12 @@ def team_performance_detail(request):
         team_name = str(user.team)
 
     # ---------------------- KPIS and Sellers Scores ----------------------
-    team_aggregates = {
-        'total_conversations': 0,
-        'total_sales': 0,
-        'meetings_scheduled': 0,
-        'referrals_received': 0,
-        'total_follow_ups': 0,
-        'sum_performance': 0,
-        'count_performance': 0,
-        
-        'sum_followup_rate': 0,
-        'sum_meeting_attempt': 0,
-        'sum_meeting_success': 0,
-        'sum_referral_req': 0,
-        'sum_discount_strat': 0,
-        'sum_objection_res': 0,
-        'active_agents_count': 0
-    }
-
-    sellers_analytics = []
-
-    for member in team_members:
-        analysis_list = get_metrics_for_agent(member.external_uuid, start_date=start_date)
-        agent_data = calculate_agent_scores(member, analysis_list, start_date=start_date)
-        
-        if not agent_data: continue
-
-        sellers_analytics.append(agent_data)
-
-        team_aggregates['total_conversations'] += agent_data.get('total_conversations', 0)
-        team_aggregates['total_sales'] += agent_data.get('total_sales', 0)
-        team_aggregates['meetings_scheduled'] += agent_data.get('meetings_scheduled', 0)
-        team_aggregates['referrals_received'] += agent_data.get('referrals_received', 0)
-        team_aggregates['total_follow_ups'] += agent_data.get('total_followups', 0)
-        
-        team_aggregates['sum_performance'] += agent_data.get('avg_performance', 0)
-        team_aggregates['count_performance'] += 1 if agent_data.get('avg_performance', 0) > 0 else 0
-
-        team_aggregates['sum_followup_rate'] += agent_data.get('follow_up_rate', 0)
-        team_aggregates['sum_meeting_attempt'] += agent_data.get('meeting_attempt_rate', 0)
-        team_aggregates['sum_meeting_success'] += agent_data.get('meeting_success_rate', 0)
-        team_aggregates['sum_referral_req'] += agent_data.get('referral_request_rate', 0)
-        team_aggregates['sum_discount_strat'] += agent_data.get('discount_strategy_rate', 0)
-        team_aggregates['sum_objection_res'] += agent_data.get('objection_resolution_rate', 0)
-        
-        team_aggregates['active_agents_count'] += 1
-
-    num_agents = team_aggregates['active_agents_count'] if team_aggregates['active_agents_count'] > 0 else 1
-    
-    team_conversion_rate = 0
-    if team_aggregates['total_conversations'] > 0:
-        team_conversion_rate = (team_aggregates['total_sales'] / team_aggregates['total_conversations']) * 100
+    team_aggregates, sellers_analytics, num_agents = get_team_aggregates(team_members, start_date=start_date)
 
     # ---------------------- Objections Frequency Table ----------------------
     team_uuids = [p.external_uuid for p in team_members if p.external_uuid]
     objection_list = get_objections_from_database(team_uuids, start_date=start_date)
+
     team_members_dict = {}
     for p in team_members:
         if p.external_uuid:
@@ -804,74 +665,17 @@ def team_performance_detail(request):
             name = p.user.first_name or p.user.username or None
             team_members_dict[key] = name
 
-    # ---------------------- Objections Resolution Table ----------------------
     objection_analysis = format_objection_data(objection_list, team_members_dict)
-    type_map = {
-        'price': 'Preço', 
-        'trust': 'Confiança', 
-        'timing': 'Tempo', 
-        'competitor': 'Concorrente', 
-        'product_fit': 'Adequação', 
-        'other': 'Outro',
-        'hesitation': 'Hesitação',
-        'payment_method': 'Método de Pagamento',
-        'implicit_price': 'Preço Implícito',
-        'implicit_timing': 'Tempo Implícito'
-    }
 
-    INFOBIP_BASE_URL = "https://portal-ny2.infobip.com/conversations/my-work?conversationId="
-    seller_groups = defaultdict(list)
+    # ---------------------- Objections Resolution Table ----------------------
 
-    for row in objection_list:
-        result = row.get('result', {})
-        details = result.get('objection_details', {}).get('objections_detected', [])
-        
-        raw_uuid = row.get('agent_uuid')
-        lookup_key = str(raw_uuid).strip().lower() if raw_uuid else None
-        agent_name = team_members_dict.get(lookup_key, lookup_key) if lookup_key else 'Sem Nome'
-        conv_uuid = row.get('conversation_uuid', '')
+    detailed_objections = format_objection_resolution_by_seller(
+        objection_list, 
+        team_members_dict,
+        infobip_conversations_url
+    )
 
-        for item in details:
-            obj_type = item.get('objection_type', 'other')
-            score = item.get('resolution_quality', 0)
-            response = item.get('seller_response', '-')
-
-
-            if (response is None or 
-                (isinstance(response, str) and not response.strip()) or
-                response.lower() in ['null', 'none']):
-                response = 'Sem Resposta'
-            else:
-                response = f'"{response}"'
-            
-            obj_data = {
-                'seller': agent_name,
-                'type': type_map.get(obj_type, obj_type.capitalize()),
-                'score': score,
-                'objection_text': item.get('objection_text', '-'),
-                'response_text': response,
-                'conversation_id': conv_uuid,
-                'url': f"{INFOBIP_BASE_URL}{conv_uuid}" if conv_uuid else "#",
-                'created_at': row.get('created_at')
-            }
-            seller_groups[agent_name].append(obj_data)
-
-
-    detailed_objections = []
-    for seller, items in seller_groups.items():
-        if not items:
-            continue
-            
-        best_item = max(items, key=lambda x: x['score'])
-        worst_item = min(items, key=lambda x: x['score'])
-
-        if best_item == worst_item:
-            detailed_objections.append(best_item)
-        else:
-            detailed_objections.append(best_item)
-            detailed_objections.append(worst_item)
-
-    detailed_objections.sort(key=lambda x: x['seller'])
+     # ---------------------- Final Context ----------------------
 
     team_data = {
         'team_name': team_name,
@@ -883,7 +687,7 @@ def team_performance_detail(request):
         'referrals_received': team_aggregates['referrals_received'],
         'total_follow_ups': team_aggregates['total_follow_ups'],
         
-        'conversion_rate': round(team_conversion_rate, 2),
+        'conversion_rate': round(team_aggregates['team_conversion_rate'], 2),
         'avg_performance': round(team_aggregates['sum_performance'] / num_agents, 2),
         
         'follow_up_rate': round(team_aggregates['sum_followup_rate'] / num_agents, 1),
