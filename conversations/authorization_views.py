@@ -38,19 +38,31 @@ def authorization_management(request):
     
     # Admins can select an organization, directors use their own
     if current_profile.is_admin():
-        # Admin: can choose organization or default to their own
-        org_uuid = request.GET.get('org_uuid', current_profile.alma_internal_organization)
-        
         # Get all organizations for the selector
         all_organizations = get_all_organizations()
+        
+        if not all_organizations:
+            messages.error(request, 'No organizations found in the system.')
+            return redirect('workspace')
+        
+        # Admin: can choose organization from query param or default to first org
+        org_uuid = request.GET.get('org_uuid')
+        
+        if not org_uuid:
+            # Default to admin's own org if they have one, otherwise first org
+            if current_profile.alma_internal_organization:
+                org_uuid = current_profile.alma_internal_organization
+            else:
+                # Use first organization as default
+                org_uuid = all_organizations[0]['uuid']
     else:
         # Director: can only manage their own organization
         org_uuid = current_profile.alma_internal_organization
         all_organizations = None
-    
-    if not org_uuid:
-        messages.error(request, 'Your profile does not have an organization assigned.')
-        return redirect('workspace')
+        
+        if not org_uuid:
+            messages.error(request, 'Your profile does not have an organization assigned.')
+            return redirect('workspace')
     
     # Get organization details
     organization = get_organization_by_uuid(org_uuid)
@@ -84,15 +96,28 @@ def authorization_create(request):
         # Get all organizations for the selector
         all_organizations = get_all_organizations()
         
+        if not all_organizations:
+            messages.error(request, 'No organizations found in the system.')
+            return redirect('workspace')
+        
         if request.method == 'POST':
             org_uuid = request.POST.get('org_uuid', '').strip()
         else:
-            # Default to query param or admin's own org
-            org_uuid = request.GET.get('org_uuid', current_profile.alma_internal_organization)
+            # Default to query param or admin's own org or first org
+            org_uuid = request.GET.get('org_uuid')
+            if not org_uuid:
+                if current_profile.alma_internal_organization:
+                    org_uuid = current_profile.alma_internal_organization
+                else:
+                    org_uuid = all_organizations[0]['uuid']
     else:
         # Director: can only create for their own organization
         org_uuid = current_profile.alma_internal_organization
         all_organizations = None
+        
+        if not org_uuid:
+            messages.error(request, 'Your profile does not have an organization assigned.')
+            return redirect('workspace')
     
     if not org_uuid:
         messages.error(request, 'Please select an organization.')
