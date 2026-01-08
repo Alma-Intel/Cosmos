@@ -10,7 +10,6 @@ from django.db import transaction
 from .models import UserProfile, Team
 from .organizations_db import (
     create_organization,
-    create_authorization,
     get_all_organizations,
     get_organization_by_uuid,
     get_authorization_by_organization
@@ -81,9 +80,6 @@ def admin_create_organization(request):
                         active='true',
                         meta_data={'created_by_admin': request.user.username}
                     )
-                    
-                    # Create authorization entry for the organization
-                    create_authorization(org_uuid)
                     
                     # Create a team for this organization
                     team = Team.objects.create(
