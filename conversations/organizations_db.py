@@ -2,6 +2,7 @@
 Utility functions for interacting with the organizations database
 """
 import uuid
+import json
 from django.db import connections
 from django.utils import timezone
 from datetime import datetime
@@ -27,12 +28,15 @@ def create_organization(name, active='true', meta_data=None):
     org_uuid = uuid.uuid4()
     now = timezone.now()
     
+    # Convert meta_data dict to JSON string if provided
+    meta_data_json = json.dumps(meta_data) if meta_data else None
+    
     with get_organizations_connection().cursor() as cursor:
         cursor.execute("""
             INSERT INTO organizations (uuid, name, created_at, updated_at, active, meta_data)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING uuid
-        """, [str(org_uuid), name, now, now, active, meta_data])
+        """, [str(org_uuid), name, now, now, active, meta_data_json])
         
         result = cursor.fetchone()
         return str(result[0]) if result else str(org_uuid)
@@ -150,7 +154,7 @@ def update_organization(org_uuid, name=None, active=None, meta_data=None):
     
     if meta_data is not None:
         updates.append("meta_data = %s")
-        params.append(meta_data)
+        params.append(json.dumps(meta_data))
     
     if not updates:
         return False
