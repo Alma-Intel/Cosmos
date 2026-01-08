@@ -306,3 +306,7 @@ ADMIN_PASSWORD_HASH = config('ADMIN_PASSWORD_HASH', default='2131a8f17431fb7d944
 # Chatbase Config
 CHATBASE_AGENT_ID = config('CHATBASE_AGENT_ID', default='')
 CHATBASE_SECRET_KEY = config('CHATBASE_SECRET_KEY', default='')
+
+# Conversation Links Config
+INFOBIP_CONVERSATIONS_URL = config('INFOBIP_CONVERSATIONS_URL', default='https://portal-ny2.infobip.com/conversations/my-work?conversationId=')
+SHORT_LINK_DOMAIN = config('SHORT_LINK_DOMAIN', default='https://followupsbot-prod.up.railway.app/r/')
