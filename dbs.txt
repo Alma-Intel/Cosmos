@@ -5,7 +5,7 @@ uuid (uuid, primary key) | name (str, not null) | created_at (datetime, not null
 
 - authorization table (part of organizations db)
 
-uuid (uuid, primary key) | apikey (str, not null) | organization_uuid (uuid, not null) | created_at (datetime, not null) | last_used (datetime, optional)
+uuid (uuid, primary key) | apikey (str, not null) | organization_uuid (uuid, not null) | created_at (datetime, not null) | last_used (datetime, optional) | apiKeyName (str, not null)
 
 
 - messages table (part of conversations db)

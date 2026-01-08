@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load user_filters %}
+
+{% block title %}Delete API Key - ALMA COSMOS{% endblock %}
+{% block header_title %}Delete API Key{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .back-link {
+        display: inline-block;
+        color: #667eea;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .confirm-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .confirm-card h2 {
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .warning-box p {
+        margin: 0.5rem 0;
+        color: #856404;
+    }
+    
+    .key-info {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .key-info .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .key-info .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+    }
+    
+    .info-value {
+        color: #333;
+        word-break: break-all;
+        text-align: right;
+        max-width: 60%;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: background 0.3s;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: background 0.3s;
+        display: inline-block;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+    
+    .messages {
+        margin-bottom: 1.5rem;
+    }
+    
+    .message {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'authorization_management' %}" class="back-link">← Back to API Keys</a>
+    
+    <div class="confirm-card">
+        <h2>⚠️ Confirm API Key Deletion</h2>
+        
+        <p>You are about to permanently delete the following API key:</p>
+        
+        <div class="key-info">
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ api_key.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">API Key:</span>
+                <span class="info-value"><code>{{ api_key.apikey }}</code></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Organization:</span>
+                <span class="info-value">{{ organization.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Created:</span>
+                <span class="info-value">{{ api_key.created_at|date:"Y-m-d H:i:s" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Last Used:</span>
+                <span class="info-value">
+                    {% if api_key.last_used %}
+                    {{ api_key.last_used|date:"Y-m-d H:i:s" }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <p><strong>⚠️ Warning:</strong> This action cannot be undone!</p>
+            <p>• Any applications using this API key will lose access immediately</p>
+            <p>• You will need to generate a new key and update your applications</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-actions">
+                <a href="{% url 'authorization_management' %}" class="btn-cancel">Cancel</a>
+                <button type="submit" class="btn-danger">Yes, Delete API Key</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

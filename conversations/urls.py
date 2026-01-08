@@ -5,6 +5,7 @@ from django.urls import path
 from . import views
 from . import views_other
 from . import admin_views
+from . import authorization_views
 
 urlpatterns = [
     # Workspace (root)
@@ -40,5 +41,10 @@ urlpatterns = [
     path('admin-panel/create-organization/', admin_views.admin_create_organization, name='admin_create_organization'),
     path('admin-panel/organizations/', admin_views.admin_organizations_list, name='admin_organizations_list'),
     path('admin-panel/organizations/<str:org_uuid>/', admin_views.admin_organization_detail, name='admin_organization_detail'),
+    
+    # Authorization Management (for directors and admins)
+    path('authorization/', authorization_views.authorization_management, name='authorization_management'),
+    path('authorization/create/', authorization_views.authorization_create, name='authorization_create'),
+    path('authorization/<str:auth_uuid>/delete/', authorization_views.authorization_delete, name='authorization_delete'),
 ]
 

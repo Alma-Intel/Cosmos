@@ -269,10 +269,17 @@
                 <li class="nav-tab {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                     <a href="{% url 'profile' %}">Profile</a>
                 </li>
-                {% if user.is_authenticated and user.profile.is_admin %}
-                <li class="nav-tab {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'admin_panel' %}">Admin Panel</a>
-                </li>
+                {% if user.is_authenticated and user.profile %}
+                    {% if user.profile.is_director or user.profile.is_admin %}
+                    <li class="nav-tab {% if 'authorization' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'authorization_management' %}">API Keys</a>
+                    </li>
+                    {% endif %}
+                    {% if user.profile.is_admin %}
+                    <li class="nav-tab {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">
+                        <a href="{% url 'admin_panel' %}">Admin Panel</a>
+                    </li>
+                    {% endif %}
                 {% endif %}
             </ul>
         </div>

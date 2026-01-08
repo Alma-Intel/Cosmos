@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load user_filters %}
+
+{% block title %}Create API Key - ALMA COSMOS{% endblock %}
+{% block header_title %}Create API Key{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .back-link {
+        display: inline-block;
+        color: #667eea;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .form-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-card h2 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-card p {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #555;
+    }
+    
+    .form-group label .required {
+        color: #dc3545;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-group .help-text {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: background 0.3s;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+    
+    .info-box {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-box p {
+        margin: 0.5rem 0;
+        color: #004085;
+    }
+    
+    .messages {
+        margin-bottom: 1.5rem;
+    }
+    
+    .message {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'authorization_management' %}" class="back-link">← Back to API Keys</a>
+    
+    <div class="form-card">
+        <h2>Create New API Key</h2>
+        
+        <div class="info-box">
+            <p><strong>ℹ️ Important:</strong></p>
+            <p>• The API key will be generated automatically</p>
+            <p>• Copy the key immediately after creation - it won't be shown in full again</p>
+            <p>• Give your key a descriptive name to identify its purpose</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if current_profile.is_admin and all_organizations %}
+            <div class="form-group">
+                <label for="org_uuid">Organization <span class="required">*</span></label>
+                <select id="org_uuid" name="org_uuid" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem;">
+                    {% for org in all_organizations %}
+                    <option value="{{ org.uuid }}" {% if org.uuid == selected_org_uuid %}selected{% endif %}>{{ org.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">Select the organization this API key will belong to</div>
+            </div>
+            {% else %}
+            <p style="margin-bottom: 1.5rem;">Organization: <strong>{{ organization.name }}</strong></p>
+            <input type="hidden" name="org_uuid" value="{{ organization.uuid }}">
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="key_name">API Key Name <span class="required">*</span></label>
+                <input type="text" id="key_name" name="key_name" required placeholder="e.g., Production API, Development Key, Mobile App">
+                <div class="help-text">Choose a descriptive name to identify this API key</div>
+            </div>
+            
+            <div class="form-actions">
+                <a href="{% url 'authorization_management' %}{% if current_profile.is_admin %}?org_uuid={{ selected_org_uuid }}{% endif %}" class="btn-cancel">Cancel</a>
+                <button type="submit" class="btn btn-primary">Generate API Key</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
