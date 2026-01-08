@@ -5,6 +5,7 @@ import random
 import string
 from django.conf import settings
 from django.db import connections
+from django.utils import timezone
 import psycopg2
 from psycopg2 import errors
 from psycopg2.extras import RealDictCursor
@@ -57,7 +58,7 @@ def get_followups_for_agent(agent_uuid):
         return []
     
 
-def get_link_tracking_from_agent(agent_uuid):
+def get_link_tracking_for_agent(agent_uuid):
     """Get links created for an agent on 'link_tracking' table."""
     if not agent_uuid:
         return []
@@ -183,3 +184,42 @@ def create_infobip_conversation_link(conversationId):
     url = f"https://portal-ny2.infobip.com/conversations/my-work?conversationId={conversationId}"
     return url
     
+def get_followups_priority(all_followups_list, followups_dict, high_priority_limit):
+    """Ordinate follow-ups into high and low priority lists."""
+
+    high_priority_tasks = []
+    low_priority_tasks = []
+
+    now = timezone.now()
+    end = (now + timezone.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    for task in all_followups_list:
+        raw_uuid = task.get('conversation_uuid')
+
+        if raw_uuid:
+            conversation_id_key = str(raw_uuid).strip().lower().replace('-', '')
+            task['original_url'] = followups_dict.get(conversation_id_key)
+        else:
+            task['original_url'] = None
+
+        if not task['original_url']:
+            task['original_url'] = create_infobip_conversation_link(str(raw_uuid or ''))
+
+        task_date = task['follow_up_date']
+
+        if timezone.is_naive(task_date):
+            task_date = timezone.make_aware(task_date)
+            task['follow_up_date'] = task_date
+
+        if task_date <= now and task['score'] >= 700:
+            if len(high_priority_tasks) < high_priority_limit:
+                high_priority_tasks.append(task)
+            else:
+                low_priority_tasks.append(task)
+
+        else:
+            low_priority_tasks.append(task)
+
+    print(f"High priority tasks: {len(high_priority_tasks)}, Low priority tasks: {len(low_priority_tasks)}")
+
+    return high_priority_tasks, low_priority_tasks
