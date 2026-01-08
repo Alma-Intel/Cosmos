@@ -1489,6 +1489,44 @@ def agent_detail(request, profile_id):
 
 
 @login_required
+def agent_delete(request, profile_id):
+    """Delete a user (admin only)"""
+    target_profile = get_object_or_404(UserProfile, pk=profile_id)
+    target_user = target_profile.user
+    
+    # Get current user's profile
+    current_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Only admins can delete users
+    if not current_profile.is_admin():
+        raise PermissionDenied("Only administrators can delete users.")
+    
+    # Prevent deleting yourself
+    if target_user == request.user:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect('agent_detail', profile_id=profile_id)
+    
+    if request.method == 'POST':
+        username = target_user.username
+        display_name = target_profile.get_display_name()
+        
+        # Delete the user (this will cascade delete the profile)
+        target_user.delete()
+        
+        messages.success(request, f'User {display_name} ({username}) has been deleted successfully.')
+        return redirect('agentes_list')
+    
+    # If GET request, show confirmation page
+    context = {
+        'title': f'Delete {target_profile.get_display_name()}',
+        'profile': target_profile,
+        'target_user': target_user,
+        'current_profile': current_profile,
+    }
+    return render(request, 'conversations/agent_delete_confirm.html', context)
+
+
+@login_required
 def profile(request):
     """Profile view - display and edit user profile"""
     # Get or create user profile

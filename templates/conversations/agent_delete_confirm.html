@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}Delete User - ALMA COSMOS{% endblock %}
+
+{% block header_title %}
+    <a href="{% url 'agent_detail' profile_id=profile.id %}" style="color: white; text-decoration: none; margin-right: 1rem;">← Back</a>
+    ALMA COSMOS - Delete User
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .confirm-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 2rem;
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .confirm-section h2 {
+        color: #dc3545;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #dc3545;
+        padding-bottom: 0.5rem;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .warning-box p {
+        margin: 0.5rem 0;
+        color: #856404;
+    }
+    
+    .user-info {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .user-info .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .user-info .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+    }
+    
+    .info-value {
+        color: #333;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: background 0.3s;
+    }
+    
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: background 0.3s;
+        display: inline-block;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirm-section">
+    <h2>⚠️ Confirm User Deletion</h2>
+    
+    <p>You are about to permanently delete the following user:</p>
+    
+    <div class="user-info">
+        <div class="info-row">
+            <span class="info-label">Name:</span>
+            <span class="info-value">{{ profile|display_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Username:</span>
+            <span class="info-value">{{ target_user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">{{ target_user.email|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Role:</span>
+            <span class="info-value">{{ profile.role }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Team:</span>
+            <span class="info-value">{{ profile.team.name|default:"No Team" }}</span>
+        </div>
+    </div>
+    
+    <div class="warning-box">
+        <p><strong>⚠️ Warning:</strong> This action cannot be undone!</p>
+        <p>• The user account will be permanently deleted</p>
+        <p>• All associated data will be removed</p>
+        <p>• The user will no longer be able to log in</p>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="action-buttons">
+            <a href="{% url 'agent_detail' profile_id=profile.id %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-danger">Yes, Delete User</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

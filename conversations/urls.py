@@ -19,6 +19,7 @@ urlpatterns = [
     path('agentes/create/', views_other.agent_create, name='agent_create'),
     path('agentes/teams/create/', views_other.team_create, name='team_create'),
     path('agentes/<uuid:profile_id>/', views_other.agent_detail, name='agent_detail'),
+    path('agentes/<uuid:profile_id>/delete/', views_other.agent_delete, name='agent_delete'),
     path('teams/', views_other.teams_list, name='teams_list'),
     path('teams/<uuid:team_id>/', views_other.team_detail, name='team_detail'),
     path('clientes/', views_other.clientes_list, name='clientes_list'),
