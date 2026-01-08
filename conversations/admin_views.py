@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import User
 from django.db import transaction
-from .models import UserProfile, Team
+from .models import UserProfile, Team, Conversation
 from .organizations_db import (
     create_organization,
     get_all_organizations,
@@ -141,12 +141,30 @@ def admin_organization_detail(request, org_uuid):
     # Get all users for this organization
     users = UserProfile.objects.filter(alma_internal_organization=org_uuid).select_related('user', 'team')
     
+    # Get statistics
+    teams_count = teams.count()
+    users_count = users.count()
+    
+    # Get conversations count for this organization
+    try:
+        conversations_count = Conversation.objects.using('conversations').filter(
+            alma_internal_organization=org_uuid
+        ).count()
+    except Exception as e:
+        # If there's an error querying conversations, set to 0
+        conversations_count = 0
+    
     context = {
         'title': f'Organization: {organization["name"]}',
         'current_profile': current_profile,
         'organization': organization,
         'teams': teams,
         'users': users,
+        'stats': {
+            'teams_count': teams_count,
+            'users_count': users_count,
+            'conversations_count': conversations_count,
+        }
     }
     return render(request, 'conversations/admin_organization_detail.html', context)
 
