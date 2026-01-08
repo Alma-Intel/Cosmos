@@ -69,6 +69,27 @@ def get_clients_analysis():
     except Exception as e:
         print(f"Error loading clients_analysis_20251211_055217.json: {e}")
         return None, None, None
+    
+def format_critical_cases():
+    try:
+        clients_data, _, global_analyses = get_clients_analysis()
+        critical_cases = []
+        cases = global_analyses.get('critical_cases', []) if global_analyses else []
+        
+        if clients_data:
+            critical_cases = [
+                c for c in cases 
+                if c.get('risk_level', '').lower() == 'high' 
+                or c.get('risk_score', 0) >= 80
+            ]
+            critical_cases.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
+
+        return critical_cases
+
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"Error processing critical cases: {e}")
+        return []
 
 
 def transform_clients_for_time_window(clients, time_window='last_6_months'):
