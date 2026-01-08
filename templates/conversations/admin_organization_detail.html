@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load user_filters %}
+
+{% block title %}{{ organization.name }} - Admin Panel{% endblock %}
+{% block header_title %}Admin Panel - Organization Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .org-detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .back-link {
+        display: inline-block;
+        color: #667eea;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .org-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .org-header h2 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .org-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .meta-item {
+        padding: 0.5rem;
+    }
+    
+    .meta-label {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 0.25rem;
+    }
+    
+    .meta-value {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .status-badge.active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .section-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .section-card h3 {
+        color: #333;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .api-key-display {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        font-family: monospace;
+        word-break: break-all;
+        margin-top: 0.5rem;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+    }
+    
+    .table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .role-badge.admin {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .role-badge.director {
+        background: #667eea;
+        color: white;
+    }
+    
+    .role-badge.manager {
+        background: #28a745;
+        color: white;
+    }
+    
+    .role-badge.user {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .messages {
+        margin-bottom: 1.5rem;
+    }
+    
+    .message {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="org-detail-container">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'admin_panel' %}" class="back-link">← Back to Admin Panel</a>
+    
+    <div class="org-header">
+        <h2>{{ organization.name }}</h2>
+        <div class="org-meta">
+            <div class="meta-item">
+                <div class="meta-label">Organization UUID</div>
+                <div class="meta-value">{{ organization.uuid }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Status</div>
+                <div class="meta-value">
+                    <span class="status-badge {% if organization.active == 'true' %}active{% else %}inactive{% endif %}">
+                        {% if organization.active == 'true' %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Created At</div>
+                <div class="meta-value">{{ organization.created_at|date:"Y-m-d H:i:s" }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Updated At</div>
+                <div class="meta-value">{{ organization.updated_at|date:"Y-m-d H:i:s" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    {% if authorization %}
+    <div class="section-card">
+        <h3>API Authorization</h3>
+        <div class="meta-item">
+            <div class="meta-label">API Key</div>
+            <div class="api-key-display">{{ authorization.apikey }}</div>
+        </div>
+        <div class="org-meta" style="margin-top: 1rem;">
+            <div class="meta-item">
+                <div class="meta-label">Authorization UUID</div>
+                <div class="meta-value">{{ authorization.uuid }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Created At</div>
+                <div class="meta-value">{{ authorization.created_at|date:"Y-m-d H:i:s" }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Last Used</div>
+                <div class="meta-value">
+                    {% if authorization.last_used %}
+                    {{ authorization.last_used|date:"Y-m-d H:i:s" }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="section-card">
+        <h3>Teams ({{ teams.count }})</h3>
+        {% if teams %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Members</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}
+                <tr>
+                    <td>{{ team.name }}</td>
+                    <td>{{ team.members.count }} members</td>
+                    <td>{{ team.created_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>
+                        <a href="{% url 'team_detail' team_id=team.id %}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">View Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">No teams found for this organization.</p>
+        {% endif %}
+    </div>
+    
+    <div class="section-card">
+        <h3>Users ({{ users.count }})</h3>
+        {% if users %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Team</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in users %}
+                <tr>
+                    <td>{{ profile.user.username }}</td>
+                    <td>{{ profile|display_name }}</td>
+                    <td>
+                        <span class="role-badge {{ profile.role|lower }}">{{ profile.role }}</span>
+                    </td>
+                    <td>
+                        {% if profile.team %}
+                        {{ profile.team.name }}
+                        {% else %}
+                        <span style="color: #999;">No team</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ profile.created_at|date:"Y-m-d H:i:s" }}</td>
+                    <td>
+                        <a href="{% url 'agent_detail' profile_id=profile.id %}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">View Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">No users found for this organization.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

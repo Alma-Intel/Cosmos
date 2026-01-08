@@ -232,6 +232,31 @@ ANALYTICS_TABLE_NAME = config('ANALYTICS_TABLE_NAME', default='analytics')
 ANALYTICS_AGENT_ID_COLUMN = config('ANALYTICS_AGENT_ID_COLUMN', default='agent_uuid')
 ANALYTICS_TIMESTAMP_COLUMN = config('ANALYTICS_TIMESTAMP_COLUMN', default='created_at')
 
+# Sixth PostgreSQL database for organizations
+# Try to get ORGANIZATIONS_DATABASE_URL first (Railway format)
+organizations_database_url = config('ORGANIZATIONS_DATABASE_URL', default=None)
+
+if organizations_database_url:
+    # Remove quotes if present
+    organizations_database_url = organizations_database_url.strip('"').strip("'")
+    # Skip if it's still a variable reference (not expanded)
+    if organizations_database_url and not organizations_database_url.startswith('${{'):
+        # Add organizations database to DATABASES
+        DATABASES['organizations'] = dj_database_url.parse(organizations_database_url)
+    else:
+        organizations_database_url = None
+
+if not organizations_database_url or organizations_database_url.startswith('${{'):
+    # Fall back to individual environment variables for organizations database
+    DATABASES['organizations'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('ORGANIZATIONS_DB_NAME', default='organizations_db'),
+        'USER': config('ORGANIZATIONS_DB_USER', default='postgres'),
+        'PASSWORD': config('ORGANIZATIONS_DB_PASSWORD', default=''),
+        'HOST': config('ORGANIZATIONS_DB_HOST', default='localhost'),
+        'PORT': config('ORGANIZATIONS_DB_PORT', default='5432'),
+    }
+
 # MongoDB Configuration
 # Support both MONGO_URL (Railway) and MONGODB_URL (legacy)
 # Check for MONGO_URL first, then fall back to MONGODB_URL

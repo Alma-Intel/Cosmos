@@ -1,31 +1,41 @@
-- messages db
+- organizations table (part of organizations db)
 
-uuid (uuid, primary key) | sender_uuid (uuid, not null) | conversation_uuid (uuid, not null) | content (text, not null) | type (text, not null) | link (text, optional) | channel (text, not null) | subchannel (text, optional) | created_at (datetime, not null)| updated_at (datetime, not null)| metadata (json, optional) | origin (str, not null) | alma_internal_organization (uuid, not null)
-
-
-- conversations db
-
-uuid (uuid, primary key) | agents (list) | external_participants (list, not null) | created_at (datetime, not null) | updated_at (datetime, not null) | metadata (json) | origin (str, not null) | alma_internal_organization (uuid, not null)
+uuid (uuid, primary key) | name (str, not null) | created_at (datetime, not null) | updated_at (datetime, not null) | active (str, not null) | meta_data (json, optional)
 
 
-- events db
+- authorization table (part of organizations db)
 
-uuid
+uuid (uuid, primary key) | apikey (str, not null) | organization_uuid (uuid, not null) | created_at (datetime, not null) | last_used (datetime, optional)
 
 
-- humans db
+- messages table (part of conversations db)
 
-uuid
+uuid (uuid, primary key) | sender_uuid (uuid, not null) | conversation_uuid (uuid, not null) | content (text, not null) | type (text, not null) | link (text, optional) | channel (text, not null) | subchannel (text, optional) | created_at (datetime, not null)| updated_at (datetime, not null) | meta_data (json, optional) | origin (str, not null) | alma_internal_organization (uuid, not null)
+
+
+- conversations table (part of conversations db)
+
+uuid (uuid, primary key) | agents (list) | external_participants (list, not null) | created_at (datetime, not null) | updated_at (datetime, not null) | meta_data (json) | origin (str, not null) | alma_internal_organization (uuid, not null)
+
+
+- agents db
+
+uuid (uuid, not null) | name (str) | email (str) | phone_number (str) | other_info (json) | internal (bool, not null) |origin(str, not null) | alma_internal_organization (uuid, not null)
 
 
 - analytics db
 
-uuid
+uuid (uuid, primary key) | conversation_uuid (not null, uuid) | context_start_index (int) | context_end_index (int) | analysis_type (str, not null) | result (json, not null) | origin (str, not null) | alma_internal_organization (uuid, not null) | created_at (datetime, not null)
 
+
+- follow_up db
+
+event_uuid (uuid, primary key) | conversation_uuid (uuid, not null) | agent_uuid (uuid, not null) | score (int, not null) | follow_up_date (datetime, not null)
 
 - Events DB
 
 uuid (uuid, primary key) | conversation_uuid (uuid, not null) | agent_uuid (uuid, not null) | created_at (datetime, not null) | scheduled_to (datetime, optional) | event_type (str, not null) | event_subtype (str, optional) | json (json, optional)
+
 
 
 EVENT TYPE:
@@ -78,7 +88,7 @@ json: {
 }
 
 
-5. Meeting Done
+6. Meeting Done
 
 event_string: "MEETING_DONE"
 json: {
@@ -88,9 +98,25 @@ json: {
     "VIDEO": ""
 }
 
-6. CUSTOMER_INFORMATION_DETECTION
+7. CUSTOMER_INFORMATION_DETECTION
 event_string: "MEETING_DONE"
 sub_event_string: ("NAME", "AGE", "GRADUATION_INSTITUTION", "DESIRED_INSTITUTION", "COURSE_INTENDED", "EXAM_YEAR", "EXSTUDENT")
 json: {
 
 }
+
+ANALYTICS_TYPE
+
+1. SENTIMENT_ANALYSIS
+analysis_string: "SENTIMENT_ANALYSIS"
+result: {
+    score: (int)
+}
+
+2. TOPICS_DETECTED
+analysis_string:
+json:{
+    
+}
+
+3. 

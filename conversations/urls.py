@@ -4,6 +4,7 @@ URL configuration for conversations app
 from django.urls import path
 from . import views
 from . import views_other
+from . import admin_views
 
 urlpatterns = [
     # Workspace (root)
@@ -32,5 +33,11 @@ urlpatterns = [
     path('analytics/segmentation-matrix/', views_other.analytics_segmentation_matrix, name='analytics_segmentation_matrix'),
     path('analytics/team-performance/', views_other.team_performance_detail, name='team_performance_detail'),
     path('profile/', views_other.profile, name='profile'),
+    
+    # Admin Panel (only for admins)
+    path('admin-panel/', admin_views.admin_panel, name='admin_panel'),
+    path('admin-panel/create-organization/', admin_views.admin_create_organization, name='admin_create_organization'),
+    path('admin-panel/organizations/', admin_views.admin_organizations_list, name='admin_organizations_list'),
+    path('admin-panel/organizations/<str:org_uuid>/', admin_views.admin_organization_detail, name='admin_organization_detail'),
 ]
 

@@ -1,0 +1,201 @@
+"""
+Utility functions for interacting with the organizations database
+"""
+import uuid
+from django.db import connections
+from django.utils import timezone
+from datetime import datetime
+
+
+def get_organizations_connection():
+    """Get connection to organizations database"""
+    return connections['organizations']
+
+
+def create_organization(name, active='true', meta_data=None):
+    """
+    Create a new organization in the organizations database
+    
+    Args:
+        name (str): Name of the organization
+        active (str): Active status ('true' or 'false')
+        meta_data (dict): Optional metadata as JSON
+        
+    Returns:
+        str: UUID of the created organization
+    """
+    org_uuid = uuid.uuid4()
+    now = timezone.now()
+    
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO organizations (uuid, name, created_at, updated_at, active, meta_data)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING uuid
+        """, [str(org_uuid), name, now, now, active, meta_data])
+        
+        result = cursor.fetchone()
+        return str(result[0]) if result else str(org_uuid)
+
+
+def create_authorization(organization_uuid, apikey=None):
+    """
+    Create an authorization entry for an organization
+    
+    Args:
+        organization_uuid (str): UUID of the organization
+        apikey (str): Optional API key (will generate one if not provided)
+        
+    Returns:
+        str: UUID of the created authorization
+    """
+    auth_uuid = uuid.uuid4()
+    now = timezone.now()
+    
+    # Generate a random API key if not provided
+    if not apikey:
+        apikey = f"alma_{uuid.uuid4().hex[:32]}"
+    
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO authorization (uuid, apikey, organization_uuid, created_at, last_used)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING uuid
+        """, [str(auth_uuid), apikey, str(organization_uuid), now, None])
+        
+        result = cursor.fetchone()
+        return str(result[0]) if result else str(auth_uuid)
+
+
+def get_organization_by_uuid(org_uuid):
+    """
+    Get organization by UUID
+    
+    Args:
+        org_uuid (str): UUID of the organization
+        
+    Returns:
+        dict: Organization data or None if not found
+    """
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute("""
+            SELECT uuid, name, created_at, updated_at, active, meta_data
+            FROM organizations
+            WHERE uuid = %s
+        """, [str(org_uuid)])
+        
+        row = cursor.fetchone()
+        if row:
+            return {
+                'uuid': str(row[0]),
+                'name': row[1],
+                'created_at': row[2],
+                'updated_at': row[3],
+                'active': row[4],
+                'meta_data': row[5],
+            }
+        return None
+
+
+def get_all_organizations():
+    """
+    Get all organizations
+    
+    Returns:
+        list: List of organization dictionaries
+    """
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute("""
+            SELECT uuid, name, created_at, updated_at, active, meta_data
+            FROM organizations
+            ORDER BY created_at DESC
+        """)
+        
+        organizations = []
+        for row in cursor.fetchall():
+            organizations.append({
+                'uuid': str(row[0]),
+                'name': row[1],
+                'created_at': row[2],
+                'updated_at': row[3],
+                'active': row[4],
+                'meta_data': row[5],
+            })
+        return organizations
+
+
+def update_organization(org_uuid, name=None, active=None, meta_data=None):
+    """
+    Update an organization
+    
+    Args:
+        org_uuid (str): UUID of the organization
+        name (str): Optional new name
+        active (str): Optional new active status
+        meta_data (dict): Optional new metadata
+        
+    Returns:
+        bool: True if updated successfully
+    """
+    updates = []
+    params = []
+    
+    if name is not None:
+        updates.append("name = %s")
+        params.append(name)
+    
+    if active is not None:
+        updates.append("active = %s")
+        params.append(active)
+    
+    if meta_data is not None:
+        updates.append("meta_data = %s")
+        params.append(meta_data)
+    
+    if not updates:
+        return False
+    
+    # Always update updated_at
+    updates.append("updated_at = %s")
+    params.append(timezone.now())
+    
+    params.append(str(org_uuid))
+    
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute(f"""
+            UPDATE organizations
+            SET {', '.join(updates)}
+            WHERE uuid = %s
+        """, params)
+        
+        return cursor.rowcount > 0
+
+
+def get_authorization_by_organization(org_uuid):
+    """
+    Get authorization for an organization
+    
+    Args:
+        org_uuid (str): UUID of the organization
+        
+    Returns:
+        dict: Authorization data or None if not found
+    """
+    with get_organizations_connection().cursor() as cursor:
+        cursor.execute("""
+            SELECT uuid, apikey, organization_uuid, created_at, last_used
+            FROM authorization
+            WHERE organization_uuid = %s
+        """, [str(org_uuid)])
+        
+        row = cursor.fetchone()
+        if row:
+            return {
+                'uuid': str(row[0]),
+                'apikey': row[1],
+                'organization_uuid': str(row[2]),
+                'created_at': row[3],
+                'last_used': row[4],
+            }
+        return None
+
