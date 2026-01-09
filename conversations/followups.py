@@ -11,7 +11,7 @@ from psycopg2 import errors
 from psycopg2.extras import RealDictCursor
 
 
-def get_followups_for_agent(agent_uuid):
+def get_followups_for_agent(agent_uuid, start_date=None):
     """Get all available followups for an agent on 'followups' database."""
     if not agent_uuid:
         return []
@@ -34,15 +34,26 @@ def get_followups_for_agent(agent_uuid):
         agent_id_col = getattr(settings, 'FOLLOWUPS_AGENT_ID_COLUMN', 'agent_uuid')
         timestamp_col = getattr(settings, 'FOLLOWUPS_TIMESTAMP_COLUMN', 'follow_up_date')
         
+        params = [str(agent_uuid)]
+
         query = f"""
             SELECT event_uuid, conversation_uuid, agent_uuid, score, {timestamp_col} as follow_up_date
             FROM {table_name}
             WHERE {agent_id_col} = %s
             ORDER BY {timestamp_col} ASC
         """
+
+        if start_date:
+            query = f"""
+                SELECT event_uuid, conversation_uuid, agent_uuid, score, {timestamp_col} as follow_up_date
+                FROM {table_name}
+                WHERE {agent_id_col} = %s AND {timestamp_col} >= %s
+                ORDER BY {timestamp_col} ASC
+            """
+            params.append(start_date)
         
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(query, (str(agent_uuid),))
+        cursor.execute(query, tuple(params))
         
         followups = cursor.fetchall()
         
@@ -58,7 +69,7 @@ def get_followups_for_agent(agent_uuid):
         return []
     
 
-def get_link_tracking_for_agent(agent_uuid):
+def get_link_tracking_for_agent(agent_uuid, start_date=None):
     """Get links created for an agent on 'link_tracking' table."""
     if not agent_uuid:
         return []
@@ -78,14 +89,20 @@ def get_link_tracking_for_agent(agent_uuid):
         )
         
         query = """
-            SELECT slug, original_url, seller_id
+            SELECT slug, original_url, seller_id, created_at, clicks
             FROM link_tracking
             WHERE seller_id = %s
         """
-        
+
+        if start_date:
+            query += " AND created_at >= %s"
+            params = (str(agent_uuid), start_date)
+        else:
+            params = (str(agent_uuid),)
+
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        cursor.execute(query, (agent_uuid,))
+        cursor.execute(query, params)
         
         links = cursor.fetchall()
         
@@ -223,3 +240,44 @@ def get_followups_priority(all_followups_list, followups_dict, high_priority_lim
     print(f"High priority tasks: {len(high_priority_tasks)}, Low priority tasks: {len(low_priority_tasks)}")
 
     return high_priority_tasks, low_priority_tasks
+
+def get_followups_with_links(all_followups, followups_info):
+    """Get follow-ups for an agent, adding short link from followups_info dict."""
+    tasks_with_links = []
+    
+    for task in all_followups:
+        raw_uuid = task.get('conversation_uuid')
+        if not raw_uuid: continue
+ 
+        task_key = str(raw_uuid).strip().lower().replace('-', '')
+        
+        link_data = followups_info.get(task_key)
+        
+        if link_data and link_data['has_short_link']:
+            task['short_url'] = link_data['url']
+            task['clicks'] = link_data['clicks']
+            
+            task_date = task['follow_up_date']
+            if timezone.is_naive(task_date):
+                 task['follow_up_date'] = timezone.make_aware(task_date)
+            
+            tasks_with_links.append(task)
+
+    tasks_with_links.sort(key=lambda x: (-x['score'], x['follow_up_date']))
+
+    return tasks_with_links
+
+def create_calendar_events(tasks):
+    calendar_events = []
+    for task in tasks:
+        event = {
+            'title': f"Score: {task['score']}", 
+            'start': task['follow_up_date'].isoformat(),
+            'url': task.get('original_url') or '#',
+            'backgroundColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
+            'borderColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
+            'allDay': True
+        }
+        calendar_events.append(event)
+
+    return calendar_events
