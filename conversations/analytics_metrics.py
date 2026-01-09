@@ -314,7 +314,7 @@ def format_critical_objections(raw_objections, team_members_dict, infobip_conver
             for item in details:
                 score = item.get('resolution_quality', 0)
                 
-                if score < 60:
+                if score < 60 and score != 0:
                     obj_type = item.get('objection_type', 'other')
                     
                     critical_objections_list.append({
@@ -336,7 +336,7 @@ def format_critical_objections(raw_objections, team_members_dict, infobip_conver
             print(f"Error processing critical objections: {e}")
         return []
 
-def format_objection_resolution_by_seller(raw_objections, team_members_dict, infobip_conversations_url=None):
+def format_objection_resolution_for_team(raw_objections, team_members_dict, infobip_conversations_url=None):
     """Format objections data to get best and worst resolved objections per seller."""
     type_map = {
         'price': 'Preço', 
@@ -413,6 +413,91 @@ def format_objection_resolution_by_seller(raw_objections, team_members_dict, inf
     except Exception as e:
         if settings.DEBUG:
             print(f"Error compiling detailed objections: {e}")
+        return []
+    
+def format_objection_resolution_by_seller(raw_objections, user_profile, infobip_conversations_url=None):
+    """Format objections data to get best and worst resolved objections for an agent by objection type."""
+    type_map = {
+        'price': 'Preço', 
+        'trust': 'Confiança', 
+        'timing': 'Tempo', 
+        'competitor': 'Concorrente', 
+        'product_fit': 'Adequação', 
+        'other': 'Outro',
+        'hesitation': 'Hesitação',
+        'payment_method': 'Método de Pagamento',
+        'implicit_price': 'Preço Implícito',
+        'implicit_timing': 'Tempo Implícito'
+    }
+
+    type_groups = defaultdict(list)
+    detailed_objections = []
+
+    try:
+        agent_name = user_profile.get_display_name()
+
+        for row in raw_objections:
+            result = row.get('result', {})
+            details = result.get('objection_details', {}).get('objections_detected', [])
+            conv_uuid = row.get('conversation_uuid', '')
+
+            for item in details:
+                obj_type = item.get('objection_type', 'other')
+                score = item.get('resolution_quality', 0)
+                if score == 0:
+                    continue
+                
+                response = item.get('seller_response', '-')
+
+                if (response is None or 
+                    (isinstance(response, str) and not response.strip()) or
+                    response.lower() in ['null', 'none']):
+                    response = 'Sem Resposta'
+                
+                obj_data = {
+                    'seller': agent_name,
+                    'type': type_map.get(obj_type, obj_type.capitalize()),
+                    'raw_type': obj_type,
+                    'score': score,
+                    'objection_text': item.get('objection_text', '-'),
+                    'response_text': response,
+                    'conversation_id': conv_uuid,
+                    'url': f"{infobip_conversations_url}{conv_uuid}" if conv_uuid else "#",
+                    'created_at': row.get('created_at')
+                }
+                
+                type_groups[obj_type].append(obj_data)
+
+    except Exception as e:
+        if settings.DEBUG: print(f"Error parsing objections: {e}")
+        return []
+
+    try:
+        sorted_types = sorted(type_groups.items(), key=lambda item: len(item[1]), reverse=True)
+        top_5_types = sorted_types[:5]
+
+        for obj_type, items in top_5_types:
+            if not items: continue
+
+            best_item = max(items, key=lambda x: x['score'])
+            best_item['tag'] = 'Melhor Prática'
+            best_item['row_style'] = 'best'
+
+            worst_item = min(items, key=lambda x: x['score'])
+            worst_item['tag'] = 'Ponto de Atenção'
+            worst_item['row_style'] = 'worst'
+
+            detailed_objections.append(best_item)
+            
+            if best_item != worst_item:
+                detailed_objections.append(worst_item)
+
+        detailed_objections.sort(key=lambda x: x['type'])
+        
+        return detailed_objections
+
+    except Exception as e:
+        if settings.DEBUG: print(f"Error compiling top 5 objections: {e}")
         return []
 
 def calculate_agent_scores(agent, analysis_list, start_date=None):
