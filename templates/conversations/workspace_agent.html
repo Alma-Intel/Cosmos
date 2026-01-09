@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% load static %} {% block title %}{{ title }}{% endblock %}
+{% load static %} 
+
+{% block title %}{{ title }}{% endblock %}
 
 {% block header_title %}ALMA COSMOS - Workspace{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'styles/calendar_custom.css' %}">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     {% if can_switch_view %}
@@ -37,76 +37,172 @@
                 <option value="365" {% if current_days == 365 %}selected{% endif %}>Todo o período</option>
             </select>
     </form>
-
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
 
-    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 100%;">
+    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
         <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #667eea; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
             Performance: {{ request.user.first_name|default:"Agente" }} vs Time
         </h2>
 
-        <div style="position: relative; height: 500px; width: 100%;">
+        <div style="position: relative; flex: 1; min-height: 350px;">
             <canvas id="performanceChart"></canvas>
         </div>
-        <p style="color: #999; font-size: 0.85rem; text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+        <p style="color: #999; font-size: 0.85rem; text-align: center; margin-top: 1rem;">
             Dados atualizados em tempo real.
         </p>
-        <!-- <a href="{% url 'team_performance_detail' %}" style="display: block; text-align: center; padding: 0.75rem; background: #667eea; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: background 0.2s; margin-top: auto;"
-            onmouseover="this.style.background='#485db9'"
-            onmouseout="this.style.background='#667eea'">
-                Ver Relatório Completo &rarr;
-        </a>-->
     </div>
 
-    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 100%;">
-        <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #667eea; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-        Calendário de Follow-ups
-        </h2>
+    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column;"> 
         
-        <div id='calendar' style="max-height: 600px;"></div>
-        
-    </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.3rem; margin: 0; color: #667eea; display: flex; align-items: center;">
+                Próximos Followups
+            </h2>
+        </div>
 
-    <div style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); grid-column: 1 / -1;">
-        <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #667eea; display: flex; align-items: center;">
-        Próximos Followups
-        </h2>
-        
-        {% if high_priority_tasks %}
-            <div style="display: flex; flex-direction: column; gap: 1rem; max-height: 400px; overflow-y: auto;">
-                {% for task in high_priority_tasks %}
-                <div style="border-left: 4px solid #3c5ae0; background: #f5f5ff; padding: 1rem; border-radius: 4px; transition: transform 0.2s;"
-                     onmouseover="this.style.transform='translateX(5px)'"
-                     onmouseout="this.style.transform='translateX(0)'">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="font-weight: 600; color: #3c5ae0;">Score: {{ task.score }}</span>
-                        <span style="font-size: 0.85rem; color: #718096;">{{ task.follow_up_date|date:"d/m H:i" }}</span>
+        {% if followups_list %}
+            <div id="followup-list-container" style="display: flex; flex-direction: column; gap: 1rem; min-height: 300px; flex: 1;">
+                {% for task in followups_list %}
+                <div class="followup-item" 
+                    data-index="{{ forloop.counter0 }}"
+                    style="display: {% if forloop.counter0 < 5 %}flex{% else %}none{% endif %}; 
+                            justify-content: space-between; align-items: center; 
+                            background: #f8fafc; padding: 1rem; border-radius: 6px; border: 1px solid #edf2f7; 
+                            border-left: 4px solid #667eea">
+                    
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                            <strong style="color: #2d3748;">Score: {{ task.score }}</strong>
+                            <span style="font-size: 0.8rem; color: #718096;">{{ task.follow_up_date|date:"d/m - H:i" }}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #4a5568;">
+                            ID: <span style="font-family: monospace; background: #edf2f7; padding: 2px 4px; border-radius: 4px;">{{ task.conversation_uuid|slice:":8" }}</span>
+                        </div>
+                        <a href="{{ task.short_url }}" target="_blank" style="display: inline-block; margin-top: 6px; color: #667eea; text-decoration: none; font-size: 0.9rem; font-weight: 500;">
+                            Retomar Conversa &rarr;
+                        </a>
                     </div>
-                    <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">
-                        Conversa ID: <span style="font-family: monospace;">{{ task.conversation_uuid|truncatechars:8 }}</span>
-                    </p>
-                    <a href="{{ task.original_url|default:'#' }}" style="display: inline-block; margin-top: 0.5rem; font-size: 0.85rem; color: #4d62be; text-decoration: underline;">
-                        Retomar conversa &rarr;
-                    </a>
+
+                    <div style="text-align: center; min-width: 80px;">
+                        {% if task.clicks > 0 %}
+                            <div style="width: 40px; height: 40px; background: #c6f6d5; color: #276749; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin: 0 auto;" title="Cliente clicou {{ task.clicks }} vezes">
+                                ✓
+                            </div>
+                            <span style="display: block; font-size: 0.7rem; color: #276749; margin-top: 4px; font-weight: 600;">VISITADO</span>
+                        {% else %}
+                            <div style="width: 40px; height: 40px; background: #fed7d7; color: #9b2c2c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin: 0 auto;" title="Cliente ainda não clicou">
+                                ✕
+                            </div>
+                            <span style="display: block; font-size: 0.7rem; color: #9b2c2c; margin-top: 4px; font-weight: 600;">PENDENTE</span>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
+
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 1.5rem;">
+                <button onclick="changePage(-1)" id="btn-prev" disabled style="padding: 6px 12px; background: white; border: 1px solid #cbd5e0; border-radius: 4px; cursor: pointer; color: #4a5568;">&larr; Anterior</button>
+                <span id="page-indicator" style="align-self: center; color: #718096; font-size: 0.9rem;">Página 1</span>
+                <button onclick="changePage(1)" id="btn-next" style="padding: 6px 12px; background: white; border: 1px solid #cbd5e0; border-radius: 4px; cursor: pointer; color: #4a5568;">Próximo &rarr;</button>
+            </div>
+
         {% else %}
-            <div style="height: 100%; display: flex; align-items: center; justify-content: center;">
-                <p style="color: #718096; font-style: italic; margin-bottom: 2rem;">Nenhuma tarefa crítica pendente.</p>
+            <div style="text-align: center; padding: 3rem; color: #a0aec0; margin: auto;">
+                <p>Nenhum followup com link ativo encontrado.</p>
             </div>
         {% endif %}
     </div>
 
+</div> <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+    <h2 style="font-size: 1.3rem; margin-bottom: 1rem; color: #667eea; display: flex; align-items: center; gap: 10px;">
+        Exemplos de Resolução
+    </h2>
+
+    {% if detailed_objections %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+            <thead>
+                <tr style="background-color: #667eea; color: white; text-align: center;">
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Vendedor</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Score</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">Tipo</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Objeção (Cliente)</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700; width: 25%;">Resposta (Vendedor)</th>
+                    <th style="padding: 12px; font-size: 0.9rem; font-weight: 700;">ID (Link)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in detailed_objections %}
+                <tr style="background-color: {% cycle 'white' '#F0F9FF' %}; border-bottom: 1px solid #e2e8f0; transition: background 0.2s;" 
+                    onmouseover="this.style.backgroundColor='#e0f2fe'" 
+                    onmouseout="this.style.backgroundColor='{% cycle 'white' '#F0F9FF' %}'">
+                    
+                    <td style="padding: 12px; color: #2d3748; font-weight: 600; text-align: center; border-right: 1px solid #edf2f7;">
+                        {{ item.seller }}
+                    </td>
+
+                    <td style="padding: 12px; text-align: center; border-right: 1px solid #edf2f7;">
+                        <span style="
+                            padding: 4px 10px; 
+                            border-radius: 12px; 
+                            font-size: 0.85rem; 
+                            font-weight: 700;
+                            {% if item.score >= 70 %} background: #d1fae5; color: #047857;
+                            {% elif item.score >= 50 %} background: #ffedd5; color: #c2410c;
+                            {% else %} background: #fee2e2; color: #b91c1c; {% endif %}
+                        ">
+                            {{ item.score }}
+                        </span>
+                    </td>
+
+                    <td style="padding: 12px; color: #4a5568; text-align: center; border-right: 1px solid #edf2f7; font-size: 0.9rem;">
+                        {{ item.type }}
+                    </td>
+
+                    <td style="padding: 12px; text-align: left; border-right: 1px solid #edf2f7; vertical-align: top;">
+                        <div style="font-size: 0.85rem; color: #4a5568; max-height: 80px; overflow-y: auto;">
+                            "{{ item.objection_text }}"
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px; text-align: left; border-right: 1px solid #edf2f7; vertical-align: top;">
+                        <div style="font-size: 0.85rem; color: #4a5568; font-style: italic; max-height: 80px; overflow-y: auto;">
+                            {{ item.response_text }}
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px; text-align: center;">
+                        <a href="{{ item.url }}" target="_blank" 
+                           title="Abrir no Infobip"
+                           style="display: inline-block; padding: 4px 8px; background: white; border: 1px solid #cbd5e0; color: #4a5568; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-family: monospace;">
+                            🔗 {{ item.conversation_id|slice:":8" }}...
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: #a0aec0; background: #f7fafc; border-radius: 6px;">
+            <p style="font-size: 1.1rem;">Nenhuma objeção registrada para análise.</p>
+        </div>
+    {% endif %}
 </div>
+
 
 <script>
     const ctx = document.getElementById('performanceChart').getContext('2d');
     const labels = {{ metrics.labels|safe }};
     const agentData = {{ metrics.agent_data|safe }};
     const teamData = {{ metrics.team_avg|safe }};
+
+    let currentPage = 0;
+    const itemsPerPage = 5;
+    const items = document.querySelectorAll('.followup-item');
+    const totalPages = Math.ceil(items.length / itemsPerPage);
 
     new Chart(ctx, {
         type: 'radar',
@@ -138,39 +234,34 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'pt-br', 
-            fixedWeekCount: false,
-            height: 550,
-            dayMaxEvents: 1, 
-            moreLinkClick: 'popover',
+    function updatePagination() {
+        items.forEach(item => item.style.display = 'none');
 
-            headerToolbar: {
-                left: 'prev,next',
-                center: 'title',
-                right: 'dayGridMonth,listWeek'
-            },
-            buttonText: {
-                month: 'Mês',
-                week: 'Semana',
-                list: 'Lista'
-            },
-  
-            events: {{ calendar_events_json|safe }},
-            
-            eventClick: function(info) {
-                if (info.event.url && info.event.url !== '#') {
-                    info.jsEvent.preventDefault();
-                    window.open(info.event.url, '_blank');
-                }
-            }
-        });
+        const start = currentPage * itemsPerPage;
+        const end = start + itemsPerPage;
         
-        calendar.render();
-    });
+        for (let i = start; i < end; i++) {
+            if (items[i]) items[i].style.display = 'flex';
+        }
+
+        document.getElementById('btn-prev').disabled = currentPage === 0;
+        document.getElementById('btn-next').disabled = currentPage >= totalPages - 1;
+        document.getElementById('page-indicator').innerText = `Página ${currentPage + 1} de ${totalPages || 1}`;
+        
+        document.getElementById('btn-prev').style.opacity = currentPage === 0 ? '0.5' : '1';
+        document.getElementById('btn-next').style.opacity = currentPage >= totalPages - 1 ? '0.5' : '1';
+    }
+
+    function changePage(direction) {
+        const newPage = currentPage + direction;
+        if (newPage >= 0 && newPage < totalPages) {
+            currentPage = newPage;
+            updatePagination();
+        }
+    }
+
+    if (items.length > 0) {
+        updatePagination();
+    }
 </script>
 {% endblock %}
