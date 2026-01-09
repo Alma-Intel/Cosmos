@@ -531,8 +531,6 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     objections = get_objections_from_database([external_uuid], start_date=start_date)
     detailed_objections = format_objection_resolution_by_seller(objections, user_profile, settings.INFOBIP_CONVERSATIONS_URL)
 
-    print(detailed_objections)
-
     context = {
         'title': 'ALMA COSMOS - Agent Workspace',
         'followups_list': tasks_with_links,
