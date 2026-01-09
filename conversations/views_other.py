@@ -464,11 +464,13 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     from .followups import (get_followups_for_agent, 
                             get_link_tracking_for_agent,
                             get_conversation_id,
-                            get_followups_priority
+                            get_followups_with_links
                             )
     from .analytics_metrics import ( get_stage_scores, 
                                     get_metrics_for_agent,
-                                    get_metrics_for_team_members)
+                                    get_metrics_for_team_members,
+                                    format_objection_resolution_by_seller,
+                                    get_objections_from_database)
     from datetime import timedelta
     from django.conf import settings
     
@@ -485,50 +487,36 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     external_uuid = user_profile.external_uuid if user_profile else None
 
     # Fetch follow-ups and link tracking data for agent
-    all_followups = get_followups_for_agent(external_uuid)
-    all_links = get_link_tracking_for_agent(external_uuid)
+    all_followups = get_followups_for_agent(external_uuid, start_date=start_date)
+    all_links = get_link_tracking_for_agent(external_uuid, start_date=start_date)
 
     # Map conversation IDs to links
-    followups_dict = {}
+    followups_info = {} 
 
     for link in all_links:
         baseUrl = settings.SHORT_LINK_DOMAIN
-        link_url = link['original_url']
-        slug = link['slug']
+        link_url = link.get('original_url')
+        slug = link.get('slug')
+        clicks = link.get('clicks', 0)
+        
         if link_url:
             conversation_id = get_conversation_id(link_url, "conversationId=", "&")
+            
             if conversation_id:
                 clean_id = str(conversation_id).strip().lower().replace('-', '')
+                
+                short_url = link_url
                 if slug:
-                    followups_dict[clean_id] = baseUrl + slug
-                else:
-                    followups_dict[clean_id] = link_url
+                    short_url = f"{baseUrl}{slug}"
+
+                followups_info[clean_id] = {
+                    'url': short_url,
+                    'clicks': clicks,
+                    'has_short_link': bool(slug)
+                }
 
     # Prioritize follow-ups
-    high_priority_limit = 10
-    low_priority_limit = 15
-
-    high_priority_tasks, low_priority_tasks = get_followups_priority(all_followups, followups_dict, high_priority_limit)
-    all_tasks_for_calendar = high_priority_tasks + low_priority_tasks
-
-    # Map followups to calendar events
-    calendar_events = []
-    for task in all_tasks_for_calendar:
-        event = {
-            'title': f"Score: {task['score']}", 
-            'start': task['follow_up_date'].isoformat(),
-            'url': task.get('original_url') or '#',
-            'backgroundColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
-            'borderColor': '#e53e3e' if task['score'] >= 700 else '#38a169',
-            'allDay': True
-        }
-        calendar_events.append(event)
-
-    high_priority_tasks.sort(key=lambda x: (-x['score'], x['follow_up_date']))
-    high_priority_tasks = high_priority_tasks[:high_priority_limit]
-
-    low_priority_tasks.sort(key=lambda x: (x['follow_up_date'], -x['score']))
-    low_priority_tasks = low_priority_tasks[:low_priority_limit]
+    tasks_with_links = get_followups_with_links(all_followups, followups_info)
 
     # Fetch team members and their UUIDs for performance chart
     team_members = get_user_team_members(request.user)
@@ -540,14 +528,19 @@ def _workspace_agent_view(request, user_profile, can_switch_view):
     scores_data = get_stage_scores(metrics_data, members_data)
     # agent_scores = calculate_agent_scores(user_profile, metrics_data, start_date=start_date)
 
+    objections = get_objections_from_database([external_uuid], start_date=start_date)
+    detailed_objections = format_objection_resolution_by_seller(objections, user_profile, settings.INFOBIP_CONVERSATIONS_URL)
+
+    print(detailed_objections)
+
     context = {
         'title': 'ALMA COSMOS - Agent Workspace',
-        'high_priority_tasks': high_priority_tasks,
+        'followups_list': tasks_with_links,
         'metrics': scores_data,
         'can_switch_view': can_switch_view,
         'current_view': 'agent',
-        'calendar_events_json': json.dumps(calendar_events),
         'current_days': days_param,
+        'detailed_objections': detailed_objections
     }
     
     return render(request, 'conversations/workspace_agent.html', context)
@@ -622,7 +615,7 @@ def team_performance_detail(request):
                                     get_team_aggregates,
                                     get_objections_from_database,
                                     format_objection_data,
-                                    format_objection_resolution_by_seller)
+                                    format_objection_resolution_for_team)
     from datetime import timedelta
     from django.conf import settings
 
@@ -669,11 +662,13 @@ def team_performance_detail(request):
 
     # ---------------------- Objections Resolution Table ----------------------
 
-    detailed_objections = format_objection_resolution_by_seller(
+    detailed_objections = format_objection_resolution_for_team(
         objection_list, 
         team_members_dict,
         infobip_conversations_url
     )
+
+
 
      # ---------------------- Final Context ----------------------
 
